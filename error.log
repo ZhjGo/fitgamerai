@@ -1,0 +1,148 @@
+## Error Type
+Console Error
+
+## Error Message
+A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/zh" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <RootLayout>
+                        <html
+                          lang="en"
+-                         className="dark"
+                        >
+                          ...
+                            <SegmentViewNode type="layout" pagePath="[lang]/lay...">
+                              <SegmentTrieNode>
+                              <link>
+                              <script>
+                              <script>
+                              <script>
+                              <RootLayout>
+                                <html
++                                 lang="zh"
+-                                 lang="en"
+                                  className="dark"
+                                >
+                                  <body
++                                   className="inter_5972bc34-module__OU16Qa__className bg-black text-white selection:..."
+-                                   className="geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li..."
+                                  >
+                  ...
+
+
+
+    at body (<anonymous>:null:null)
+    at RootLayout (app/[lang]/layout.tsx:17:13)
+
+## Code Frame
+  15 |     return (
+  16 |         <html lang={resolvedParams.lang || "en"} className="dark">
+> 17 |             <body className={`${inter.className} bg-black text-white selection:bg-white/20 overflow-x-hidden`}>
+     |             ^
+  18 |                 <Navbar />
+  19 |                 <main className="min-h-screen pt-24 pb-12">
+  20 |                     {children}
+
+Next.js version: 16.1.1 (Turbopack)
+
+
+## Error Type
+Console Error
+
+## Error Message
+In HTML, <html> cannot be a child of <body>.
+This will cause a hydration error.
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:"/zh", ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/en" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+>                         <body
+>                           className="geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__var..."
+>                         >
+                            ...
+                              <SegmentViewNode type="layout" pagePath="[lang]/lay...">
+                                <SegmentTrieNode>
+                                <link>
+                                <script>
+                                <script>
+                                <script>
+                                <RootLayout>
+>                                 <html lang="en" className="dark">
+                  ...
+
+
+
+    at html (<anonymous>:null:null)
+    at RootLayout (app/[lang]/layout.tsx:16:9)
+
+## Code Frame
+  14 |     const resolvedParams = await params;
+  15 |     return (
+> 16 |         <html lang={resolvedParams.lang || "en"} className="dark">
+     |         ^
+  17 |             <body className={`${inter.className} bg-black text-white selection:bg-white/20 overflow-x-hidden`}>
+  18 |                 <Navbar />
+  19 |                 <main className="min-h-screen pt-24 pb-12">
+
+Next.js version: 16.1.1 (Turbopack)
+
+
+## Error Type
+Console Error
+
+## Error Message
+<body> cannot contain a nested <html>.
+See this log for the ancestor stack trace.
+
+
+    at body (<anonymous>:null:null)
+    at RootLayout (app/layout.tsx:27:7)
+
+## Code Frame
+  25 |   return (
+  26 |     <html lang="en">
+> 27 |       <body
+     |       ^
+  28 |         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+  29 |       >
+  30 |         {children}
+
+Next.js version: 16.1.1 (Turbopack)

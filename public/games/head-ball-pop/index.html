@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Head Ball Pop AI</title>
+    <style>
+        :root {
+            --ios-bg: #0c1421;
+            --ios-glass: rgba(255, 255, 255, 0.15);
+            --ios-blur: blur(20px);
+            --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --accent: #ff9500;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--ios-font);
+            background-color: #000;
+            color: white;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            aspect-ratio: 9/16;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        #beach-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            filter: brightness(0.8) contrast(1.1);
+            z-index: 0;
+        }
+
+        #webcam {
+            position: absolute;
+            width: 120px;
+            height: 160px;
+            bottom: 20px;
+            right: 20px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 2px solid var(--ios-glass);
+            transform: scaleX(-1);
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 5;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: rgba(12, 20, 33, 0.6);
+            backdrop-filter: blur(15px);
+            transition: opacity 0.4s ease;
+            text-align: center;
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #ff9500 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            font-size: 16px;
+            opacity: 0.8;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: white;
+            color: black;
+            padding: 16px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            border: none;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            background: #eee;
+        }
+
+        #hud {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 80;
+            pointer-events: none;
+        }
+
+        .hud-item {
+            background: var(--ios-glass);
+            backdrop-filter: var(--ios-blur);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            margin-bottom: 2px;
+        }
+
+        .value {
+            font-size: 24px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #combo-container {
+            position: absolute;
+            bottom: 200px;
+            width: 100%;
+            text-align: center;
+            z-index: 90;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        #combo-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #combo-text {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 4px 20px rgba(255, 149, 0, 0.5);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <img id="beach-bg" src="beach-bg.jpeg" alt="Beach Background">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="hud">
+            <div class="hud-item">
+                <div class="label" id="score-label">Score</div>
+                <div class="value" id="score-val">0</div>
+            </div>
+            <div class="hud-item">
+                <div class="label" id="best-label">Best</div>
+                <div class="value" id="best-val">0</div>
+            </div>
+        </div>
+
+        <div id="combo-container">
+            <div id="combo-text">5 COMBO!</div>
+        </div>
+
+        <div id="loading-screen" class="screen">
+            <div class="loading-spinner"></div>
+            <p id="loading-text">Waking up AI Vision...</p>
+        </div>
+
+        <div id="start-screen" class="screen" style="display: none;">
+            <h1 id="start-title">Head Ball Pop</h1>
+            <p id="start-desc">Use your head to keep the beach ball up!<br>Don't let it fall.</p>
+            <button class="btn" id="start-btn">Start Playing</button>
+        </div>
+
+        <div id="game-over-screen" class="screen" style="display: none;">
+            <h1 id="over-title">Game Over</h1>
+            <p id="final-score-text">Score: 0</p>
+            <button class="btn" id="restart-btn">Try Again</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import {
+            FaceLandmarker,
+            FilesetResolver
+        } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+        let faceLandmarker;
+        let video = document.getElementById('webcam');
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+        let score = 0;
+        let bestScore = 0;
+        let gameActive = false;
+        let headX = 0.5, headY = 0.5;
+
+        // --- Multi-language ---
+        const translations = {
+            zh: {
+                loading: "正在唤醒 AI 视觉...",
+                startTitle: "头球顶顶乐",
+                startDesc: "用头顶住沙滩球，不让它落地！<br>不能用手哦。",
+                startBtn: "开始游戏",
+                overTitle: "哎呀，掉地上了",
+                scorePrefix: "最终分数: ",
+                restartBtn: "再玩一次",
+                scoreLabel: "当前分数",
+                bestLabel: "全场最高"
+            },
+            en: {
+                loading: "Waking up AI Vision...",
+                startTitle: "Head Ball Pop",
+                startDesc: "Use your head to keep the beach ball up!<br>Don't let it fall.",
+                startBtn: "Start Playing",
+                overTitle: "Game Over",
+                scorePrefix: "Final Score: ",
+                restartBtn: "Try Again",
+                scoreLabel: "Score",
+                bestLabel: "Best"
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang') === 'zh' ? 'zh' : 'en';
+        const t = translations[lang];
+
+        document.getElementById('loading-text').innerText = t.loading;
+        document.getElementById('start-title').innerText = t.startTitle;
+        document.getElementById('start-desc').innerHTML = t.startDesc;
+        document.getElementById('start-btn').innerText = t.startBtn;
+        document.getElementById('over-title').innerText = t.overTitle;
+        document.getElementById('restart-btn').innerText = t.restartBtn;
+        document.getElementById('score-label').innerText = t.scoreLabel;
+        document.getElementById('best-label').innerText = t.bestLabel;
+
+        class LowPassFilter {
+            constructor(alpha, initVal = 0) {
+                this.y = initVal; this.alpha = alpha; this.initialized = false;
+            }
+            filter(value, alpha) {
+                if (!this.initialized) { this.y = value; this.initialized = true; return value; }
+                this.y = alpha * value + (1 - alpha) * this.y; return this.y;
+            }
+        }
+        class OneEuroFilter {
+            constructor(minCutoff = 1.0, beta = 0.06, dCutoff = 1.0) {
+                this.minCutoff = minCutoff; this.beta = beta; this.dCutoff = dCutoff;
+                this.xFilter = new LowPassFilter(0); this.dxFilter = new LowPassFilter(0);
+                this.lastTime = null;
+            }
+            alpha(cutoff, dt) {
+                const tau = 1.0 / (2 * Math.PI * cutoff); return 1.0 / (1.0 + tau / dt);
+            }
+            filter(value, timestamp) {
+                if (this.lastTime === null || timestamp === this.lastTime) {
+                    this.lastTime = timestamp; return this.xFilter.filter(value, 1.0);
+                }
+                const dt = (timestamp - this.lastTime) / 1000.0; this.lastTime = timestamp;
+                const dx = (value - this.xFilter.y) / dt;
+                const dAlpha = this.alpha(this.dCutoff, dt);
+                const edx = this.dxFilter.filter(dx, dAlpha);
+                const cutoff = this.minCutoff + this.beta * Math.abs(edx);
+                const alpha = this.alpha(cutoff, dt);
+                return this.xFilter.filter(value, alpha);
+            }
+        }
+
+        const headFilterX = new OneEuroFilter(1.0, 0.08);
+        const headFilterY = new OneEuroFilter(1.0, 0.08);
+
+        class Ball {
+            constructor() { this.reset(); }
+            reset() {
+                this.radius = 45;
+                this.x = canvas.width / 2;
+                this.y = -this.radius * 2;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = 2;
+                this.gravity = 0.18;
+                this.rotation = 0;
+                this.vRotation = (Math.random() - 0.5) * 0.1;
+                this.combo = 0;
+            }
+            update(hx, hy) {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.99;
+                this.rotation += this.vRotation;
+
+                if (this.x < this.radius) { this.x = this.radius; this.vx *= -0.7; }
+                if (this.x > canvas.width - this.radius) { this.x = canvas.width - this.radius; this.vx *= -0.7; }
+
+                const dx = this.x - hx;
+                const dy = this.y - hy;
+                const dist = Math.hypot(dx, dy);
+                const minDistance = this.radius + 50;
+
+                if (dist < minDistance && this.vy > 0) {
+                    this.vy = -12 - Math.min(score * 0.1, 5);
+                    this.vx += (this.x - hx) * 0.15;
+                    this.vRotation = (this.x - hx) * 0.01;
+                    this.y = hy - minDistance;
+                    score++;
+                    this.combo++;
+                    updateHUD();
+                    showCombo(this.combo);
+                    playBounceSfx();
+                }
+
+                if (this.y > canvas.height + this.radius) { endGame(); }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                const colors = ['#FF3B30', '#FFCC00', '#007AFF'];
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = colors[i];
+                    ctx.beginPath(); ctx.moveTo(0, 0);
+                    ctx.arc(0, 0, this.radius, (i * Math.PI * 2) / 3, ((i + 1) * Math.PI * 2) / 3);
+                    ctx.fill();
+                }
+                ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.2, 0, Math.PI * 2); ctx.fill();
+                const grad = ctx.createRadialGradient(-this.radius * 0.3, -this.radius * 0.3, 0, -this.radius * 0.3, -this.radius * 0.3, this.radius * 1.2);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        let ball = new Ball();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBounceSfx() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200 + Math.random() * 100, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        async function initAI() {
+            try {
+                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+                faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+                        delegate: "GPU"
+                    },
+                    runningMode: "VIDEO",
+                    numFaces: 1
+                });
+                await setupCamera();
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('start-screen').style.display = 'flex';
+            } catch (err) {
+                console.error(err);
+                alert("AI Error! Please try running from a local web server (http://). Local file access (file://) is restricted by browsers.");
+            }
+        }
+
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
+            video.srcObject = stream;
+            return new Promise(res => video.onloadedmetadata = () => res());
+        }
+
+        function resize() {
+            const container = document.getElementById('game-container');
+            if (container) {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+            }
+        }
+
+        function startGame() {
+            score = 0; ball.combo = 0; updateHUD(); ball.reset(); gameActive = true;
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameActive = false;
+            if (score > bestScore) bestScore = score;
+            document.getElementById('game-over-screen').style.display = 'flex';
+            document.getElementById('final-score-text').innerText = t.scorePrefix + score;
+            window.parent.postMessage({ type: 'GAME_OVER', score: score }, '*');
+        }
+
+        function updateHUD() {
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('best-val').innerText = bestScore;
+        }
+
+        function showCombo(val) {
+            if (val < 2) return;
+            const el = document.getElementById('combo-container');
+            document.getElementById('combo-text').innerText = `${val} COMBO!`;
+            el.classList.add('active');
+            setTimeout(() => el.classList.remove('active'), 1000);
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameActive) return;
+            if (faceLandmarker && video.readyState >= 2) {
+                const results = faceLandmarker.detectForVideo(video, timestamp);
+                if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+                    const lms = results.faceLandmarks[0];
+                    const topHead = lms[10];
+                    headX = headFilterX.filter(1 - topHead.x, timestamp);
+                    headY = headFilterY.filter(topHead.y, timestamp);
+                }
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const hx = headX * canvas.width;
+            const hy = headY * canvas.height;
+
+            // --- Draw Stylized Back-Head (后脑勺) ---
+            ctx.save();
+            ctx.translate(hx, hy);
+
+            // Subtle Shadow below head
+            const shadowGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 70);
+            shadowGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
+            shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = shadowGrad;
+            ctx.beginPath(); ctx.arc(0, 10, 70, 0, Math.PI * 2); ctx.fill();
+
+            // Neck
+            ctx.fillStyle = '#d2a679';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(-22, 35, 44, 40, 10);
+            else ctx.rect(-22, 35, 44, 40);
+            ctx.fill();
+
+            // Head Silhouette
+            ctx.fillStyle = '#eac086';
+            ctx.beginPath(); ctx.ellipse(0, 0, 48, 58, 0, 0, Math.PI * 2); ctx.fill();
+
+            // Hair (Modern stylized back view) - covers part of head/face
+            ctx.fillStyle = '#2b1d16';
+            ctx.beginPath();
+            ctx.moveTo(-50, -5);
+            ctx.bezierCurveTo(-55, -75, 55, -75, 50, -5);
+            ctx.bezierCurveTo(50, 40, -50, 40, -50, -5);
+            ctx.fill();
+
+            // Hair strands/highlights
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.arc(0, -15 + i * 8, 35 - i * 2, Math.PI * 1.1, Math.PI * 1.9);
+                ctx.stroke();
+            }
+
+            // Ears (Subtle)
+            ctx.fillStyle = '#eac086';
+            ctx.beginPath(); ctx.ellipse(-48, 0, 8, 15, 0.2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(48, 0, 8, 15, -0.2, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+            ball.update(hx, hy);
+            ball.draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('start-btn').onclick = startGame;
+        document.getElementById('restart-btn').onclick = startGame;
+        window.addEventListener('resize', resize);
+
+        resize();
+        initAI();
+    </script>
+</body>
+
+</html>

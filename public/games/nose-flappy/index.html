@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nose Flappy</title>
+    <style>
+        :root {
+            --ios-bg: #1a1c2c;
+            --ios-glass: rgba(255, 255, 255, 0.12);
+            --ios-blur: blur(25px);
+            --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --primary-accent: #34c759;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--ios-font);
+            background-color: #000;
+            color: white;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            aspect-ratio: 9/16;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        #bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            filter: brightness(0.6);
+            z-index: 0;
+        }
+
+        canvas {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: transparent;
+        }
+
+        #video-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+            height: 133px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--ios-glass);
+            transform: scaleX(-1);
+            background: #000;
+            z-index: 10;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* HUD Glassmorphism */
+        .hud-capsule {
+            position: absolute;
+            background: var(--ios-glass);
+            backdrop-filter: var(--ios-blur);
+            -webkit-backdrop-filter: var(--ios-blur);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+            font-size: 18px;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #score-display {
+            top: 20px;
+            left: 20px;
+            color: #fff;
+        }
+
+        /* Overlays */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        p {
+            font-size: 18px;
+            opacity: 0.8;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: #fff;
+            color: #000;
+            padding: 16px 40px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+        }
+
+        .btn:active {
+            transform: scale(0.92);
+        }
+
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0c1421;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Calibration Hint */
+        #calibration-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--primary-accent);
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <img id="bg-image" src="bg.png" alt="Sky Background">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="video-container">
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+
+        <div id="score-display" class="hud-capsule">
+            <span>🐦</span> <span id="score-value">0</span>
+        </div>
+
+        <!-- Start/Game Over Overlay -->
+        <div id="overlay">
+            <h1 id="overlay-title">Nose Flappy</h1>
+            <p id="overlay-desc">抬高头部让鸟飞起，低头下降。<br>穿过缝隙以得分。</p>
+            <button id="start-btn" class="btn">开始游戏</button>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen">
+            <div class="spinner"></div>
+            <p id="loading-text">正在初始化 AI...</p>
+        </div>
+
+        <div id="calibration-hint">请对准摄像头</div>
+    </div>
+
+    <!-- MediaPipe Libraries -->
+    <script type="module">
+        import {
+            FaceLandmarker,
+            FilesetResolver
+        } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+        // --- I18N ---
+        const translations = {
+            zh: {
+                loading: "正在加载游戏...",
+                title: "体感 Flappy",
+                instructions: "抬高头部控制小鸟上升 🐦<br>穿过障碍物得分 🌳",
+                start: "开始游戏",
+                gameOver: "游戏结束!",
+                restart: "再玩一次",
+                scorePrefix: "得分: ",
+                calibration: "请确保脸部在画面中心"
+            },
+            en: {
+                loading: "Loading Game...",
+                title: "Nose Flappy",
+                instructions: "Lift your head to fly UP 🐦<br>Pass pipes to score 🌳",
+                start: "Start Game",
+                gameOver: "Game Over!",
+                restart: "Play Again",
+                scorePrefix: "Score: ",
+                calibration: "Center your face in view"
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang') === 'zh' ? 'zh' : 'en';
+        const t = translations[lang];
+
+        // UI Initialization
+        document.getElementById('overlay-title').innerText = t.title;
+        document.getElementById('overlay-desc').innerHTML = t.instructions;
+        document.getElementById('start-btn').innerText = t.start;
+        document.getElementById('loading-text').innerText = t.loading;
+        document.getElementById('calibration-hint').innerText = t.calibration;
+
+        // --- Constants & Config ---
+        const CANVAS_WIDTH = 1080;
+        const CANVAS_HEIGHT = 1920;
+        const PIPE_SPACING = 550;
+        const PIPE_WIDTH = 160;
+        const PIPE_GAP = 550;
+        const BIRD_SIZE = 80;
+        const GRAVITY = 0; // Handled by AI position
+        const FLOAT_LERP = 0.2; // Smooth tracking
+
+        // --- Assets ---
+        const BIRD_IMG = new Image();
+        // [修改提示] 如果想更换小鸟图片，可以修改下方的 src 为新的图片 URL 或 Base64 数据
+        BIRD_IMG.src = `data:image/svg+xml;base64,${btoa(`
+            <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <radialGradient id="gradBody" cx="40%" cy="40%" r="50%">
+                        <stop offset="0%" style="stop-color:#FFEB3B;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FBC02D;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="gradEye" cx="30%" cy="30%" r="50%">
+                        <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#E0E0E0;stop-opacity:1" />
+                    </radialGradient>
+                </defs>
+                <!-- Body -->
+                <ellipse cx="45" cy="50" rx="35" ry="32" fill="url(#gradBody)" stroke="#000" stroke-width="2.5"/>
+                <!-- Cheek -->
+                <ellipse cx="45" cy="62" rx="10" ry="6" fill="#FF8A80" fill-opacity="0.4"/>
+                <!-- Wing -->
+                <path d="M 20 50 Q 15 30 35 45 Q 25 55 20 50" fill="#FFF" stroke="#000" stroke-width="2"/>
+                <path d="M 22 42 L 30 46 M 23 48 L 32 50" stroke="#000" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+                <!-- Eye -->
+                <circle cx="65" cy="40" r="14" fill="url(#gradEye)" stroke="#000" stroke-width="2.5"/>
+                <circle cx="72" cy="38" r="6" fill="#000"/>
+                <circle cx="74" cy="36" r="2.5" fill="#FFF"/> <!-- Sparkle -->
+                <!-- Beak -->
+                <path d="M 75 48 L 98 55 L 75 68 Z" fill="#FF5252" stroke="#000" stroke-width="2"/>
+                <path d="M 75 58 L 90 58" stroke="#000" stroke-width="1.5" opacity="0.5"/> <!-- Beak line -->
+                <!-- Belly Highlight -->
+                <ellipse cx="40" cy="70" rx="18" ry="8" fill="#FFF176" fill-opacity="0.5"/>
+            </svg>
+        `)}`;
+
+        // --- Sound Manager ---
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            playTone(freq, duration, type = 'sine', volume = 0.1) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+            playPass() { this.playTone(880, 0.1, 'triangle', 0.05); }
+            playHit() { this.playTone(150, 0.4, 'sawtooth', 0.1); }
+        }
+        const sfx = new SoundManager();
+
+        // --- Game Objects ---
+        class Bird {
+            constructor() {
+                this.y = CANVAS_HEIGHT / 2;
+                this.targetY = CANVAS_HEIGHT / 2;
+                this.x = CANVAS_WIDTH * 0.25;
+                this.velocity = 0;
+            }
+            update(noseY) {
+                const lastY = this.y;
+                if (noseY !== null) {
+                    let normalized = (noseY - 0.3) / (0.4);
+                    normalized = Math.max(0, Math.min(1, normalized));
+                    this.targetY = normalized * CANVAS_HEIGHT;
+                }
+                this.y += (this.targetY - this.y) * FLOAT_LERP;
+                this.velocity = this.y - lastY;
+            }
+            draw(ctx) {
+                ctx.save();
+                // Use Math.round for pixel-perfect positioning to avoid jitter
+                const drawX = Math.round(this.x);
+                const drawY = Math.round(this.y);
+                ctx.translate(drawX, drawY);
+
+                // Rotation based on velocity
+                const rotation = Math.max(-0.4, Math.min(0.4, this.velocity * 0.01));
+                ctx.rotate(rotation);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.ellipse(0, 45, BIRD_SIZE / 1.5, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw Image
+                ctx.drawImage(BIRD_IMG, -BIRD_SIZE / 2, -BIRD_SIZE / 2, BIRD_SIZE, BIRD_SIZE);
+
+                ctx.restore();
+            }
+        }
+
+        class Pipe {
+            constructor(x) {
+                this.x = x;
+                this.gapY = Math.random() * (CANVAS_HEIGHT - PIPE_GAP - 400) + 200;
+                this.passed = false;
+            }
+            update(speed) {
+                this.x -= speed;
+            }
+            draw(ctx) {
+                const capHeight = 60;
+                const capOverflow = 15;
+
+                const drawSinglePipe = (x, y, w, h, isTop) => {
+                    ctx.save();
+                    // Round coordinates for jitter-free rendering
+                    const rx = Math.round(x);
+                    const ry = Math.round(y);
+                    const rw = Math.round(w);
+                    const rh = Math.round(h);
+
+                    // Column Gradient
+                    const grad = ctx.createLinearGradient(rx, 0, rx + rw, 0);
+                    grad.addColorStop(0, '#2E7D32');
+                    grad.addColorStop(0.3, '#4CAF50');
+                    grad.addColorStop(0.5, '#A5D6A7');
+                    grad.addColorStop(0.7, '#4CAF50');
+                    grad.addColorStop(1, '#1B5E20');
+
+                    // Pipe Body
+                    ctx.fillStyle = grad;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 4;
+                    ctx.fillRect(rx, ry, rw, rh);
+                    ctx.strokeRect(rx, ry, rw, rh);
+
+                    // Cap
+                    const capY = isTop ? ry + rh - capHeight : ry;
+                    ctx.fillRect(rx - capOverflow, Math.round(capY), rw + capOverflow * 2, capHeight);
+                    ctx.strokeRect(rx - capOverflow, Math.round(capY), rw + capOverflow * 2, capHeight);
+
+                    // Highlight
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                    ctx.fillRect(rx + rw * 0.15, ry, rw * 0.1, rh);
+
+                    ctx.restore();
+                };
+
+                // Top Pipe
+                drawSinglePipe(this.x, 0, PIPE_WIDTH, this.gapY, true);
+                // Bottom Pipe
+                drawSinglePipe(this.x, this.gapY + PIPE_GAP, PIPE_WIDTH, CANVAS_HEIGHT - (this.gapY + PIPE_GAP), false);
+            }
+            roundRect(ctx, x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // --- Game Setup ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        const video = document.getElementById('webcam');
+        let faceLandmarker;
+        let lastVideoTime = -1;
+        let noseY = null;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let score = 0;
+        let bird = new Bird();
+        let pipes = [];
+        let gameSpeed = 8;
+        let frameId;
+
+        // --- AI Logic ---
+        async function initAI() {
+            try {
+                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+                faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+                        delegate: "GPU"
+                    },
+                    outputFaceBlendshapes: false,
+                    runningMode: "VIDEO",
+                    numFaces: 1
+                });
+
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                video.srcObject = stream;
+                video.addEventListener('loadeddata', () => {
+                    document.getElementById('loading-screen').style.opacity = 0;
+                    setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
+                    predict();
+                });
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading-text').innerText = "Camera Error";
+            }
+        }
+
+        async function predict() {
+            if (lastVideoTime !== video.currentTime && faceLandmarker) {
+                lastVideoTime = video.currentTime;
+                const result = faceLandmarker.detectForVideo(video, Date.now());
+                if (result.faceLandmarks && result.faceLandmarks.length > 0) {
+                    const lms = result.faceLandmarks[0];
+                    // Nose tip is landmark 4
+                    noseY = lms[4].y;
+                    document.getElementById('calibration-hint').style.opacity = 0;
+                } else {
+                    noseY = null;
+                    document.getElementById('calibration-hint').style.opacity = 0.8;
+                }
+            }
+            requestAnimationFrame(predict);
+        }
+
+        // --- Game Loop ---
+        function resetGame() {
+            score = 0;
+            gameSpeed = 8;
+            bird = new Bird();
+            pipes = [new Pipe(CANVAS_WIDTH + 200)];
+            document.getElementById('score-value').innerText = score;
+        }
+
+        function spawnPipes() {
+            const lastPipe = pipes[pipes.length - 1];
+            if (lastPipe.x < CANVAS_WIDTH - PIPE_SPACING) {
+                pipes.push(new Pipe(CANVAS_WIDTH));
+            }
+            if (pipes[0].x < -PIPE_WIDTH) {
+                pipes.shift();
+            }
+        }
+
+        function checkCollisions() {
+            // Screen boundaries
+            if (bird.y < 0 || bird.y > CANVAS_HEIGHT) return true;
+
+            for (let p of pipes) {
+                // Horizontal match
+                if (bird.x + BIRD_SIZE / 3 > p.x && bird.x - BIRD_SIZE / 3 < p.x + PIPE_WIDTH) {
+                    // Vertical miss gap
+                    if (bird.y - BIRD_SIZE / 3 < p.gapY || bird.y + BIRD_SIZE / 3 > p.gapY + PIPE_GAP) {
+                        return true;
+                    }
+                }
+                // Score
+                if (!p.passed && bird.x > p.x + PIPE_WIDTH) {
+                    p.passed = true;
+                    score++;
+                    document.getElementById('score-value').innerText = score;
+                    sfx.playPass();
+                    gameSpeed += 0.1;
+                }
+            }
+            return false;
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            if (gameState === 'PLAYING') {
+                bird.update(noseY);
+                spawnPipes();
+                for (let p of pipes) p.update(gameSpeed);
+
+                if (checkCollisions()) {
+                    gameState = 'GAMEOVER';
+                    sfx.playHit();
+                    showOverlay('GAMEOVER');
+                    window.parent.postMessage({ type: 'GAME_OVER', score: score }, '*');
+                }
+            }
+
+            // Draw
+            for (let p of pipes) p.draw(ctx);
+            bird.draw(ctx);
+
+            frameId = requestAnimationFrame(loop);
+        }
+
+        function showOverlay(state) {
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('overlay-title');
+            const btn = document.getElementById('start-btn');
+            overlay.style.display = 'flex';
+
+            if (state === 'GAMEOVER') {
+                title.innerText = t.gameOver;
+                btn.innerText = t.restart;
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('start-btn').addEventListener('click', () => {
+            sfx.init();
+            document.getElementById('overlay').style.display = 'none';
+            resetGame();
+            gameState = 'PLAYING';
+        });
+
+        // Initialize
+        initAI();
+        loop();
+
+    </script>
+</body>
+
+</html>

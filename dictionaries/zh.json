@@ -1,0 +1,18 @@
+{
+    "common": {
+        "start_game": "开始游戏",
+        "back_to_home": "返回首页",
+        "play_now": "立即开始",
+        "exit": "退出",
+        "select_language": "语言切换"
+    },
+    "home": {
+        "hero_title": "体感互动游戏平台",
+        "hero_subtitle": "开启全新的体感互动体验，无需外设，只需摄像头即可畅玩。",
+        "featured_games": "精选游戏",
+        "more_coming_soon_title": "更多游戏即将上线",
+        "more_coming_soon_desc": "我们每周都在开发新的体感感应游戏。",
+        "no_hardware_title": "无需额外硬件",
+        "no_hardware_desc": "只需使用电脑内置的摄像头即可。"
+    }
+}

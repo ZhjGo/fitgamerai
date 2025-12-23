@@ -1,0 +1,53 @@
+[
+    {
+        "id": "head-ball-pop",
+        "en": {
+            "title": "Head Ball Pop",
+            "description": "Use your head to keep the beach ball up! Hands are not allowed.",
+            "thumbnail": "/games/head-ball-pop/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Head Control",
+                "Physics",
+                "AI",
+                "Beach"
+            ],
+            "seo": {
+                "title": "Head Ball Pop - AI Face Motion Control Game",
+                "description": "Bounce a colorful beach ball using only your head! A fun AI vision game with physics.",
+                "keywords": [
+                    "head ball pop",
+                    "ai game",
+                    "face tracking",
+                    "webcam game",
+                    "physics game",
+                    "beach ball"
+                ]
+            }
+        },
+        "zh": {
+            "title": "头球顶顶乐",
+            "description": "只能用头去顶沙滩球，不能让它落地！",
+            "thumbnail": "/games/head-ball-pop/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "头部控制",
+                "物理模拟",
+                "AI",
+                "沙滩"
+            ],
+            "seo": {
+                "title": "头球顶顶乐 - AI 面部动作识别体感游戏",
+                "description": "用头去顶色彩斑斓的沙滩球，不让它落地！基于 AI 视觉识别的趣味体感游戏。",
+                "keywords": [
+                    "头球顶顶乐",
+                    "ai游戏",
+                    "面部追踪",
+                    "动作感应",
+                    "网页游戏",
+                    "沙滩球"
+                ]
+            }
+        }
+    }
+]

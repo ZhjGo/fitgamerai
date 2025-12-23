@@ -1,0 +1,49 @@
+[
+    {
+        "id": "nose-flappy",
+        "en": {
+            "title": "Nose Flappy",
+            "description": "Control the bird by moving your head up and down! Pass through the pipes to score.",
+            "thumbnail": "/games/nose-flappy/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Motion",
+                "Skill",
+                "Webcam",
+                "Casual"
+            ],
+            "seo": {
+                "title": "Nose Flappy - Head Motion Control Game",
+                "description": "A Flappy Bird clone where you control the height with your nose height via webcam.",
+                "keywords": [
+                    "nose flappy",
+                    "motion game",
+                    "face tracking game",
+                    "flappy bird clone"
+                ]
+            }
+        },
+        "zh": {
+            "title": "体感 Flappy",
+            "description": "通过上下移动头部来控制小鸟！穿过水管得分。",
+            "thumbnail": "/games/nose-flappy/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "体感",
+                "技巧",
+                "摄像头",
+                "休闲"
+            ],
+            "seo": {
+                "title": "体感 Flappy - 头部动作感应游戏",
+                "description": "使用面部追踪技术，通过头部高度控制飞行。经典的 Flappy 玩法，全新的体感操控。",
+                "keywords": [
+                    "接水果",
+                    "体感游戏",
+                    "动作感应",
+                    "Flappy Bird"
+                ]
+            }
+        }
+    }
+]

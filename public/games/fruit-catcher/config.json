@@ -1,0 +1,47 @@
+[
+    {
+        "id": "fruit-catcher",
+        "en": {
+            "title": "Fruit Catcher",
+            "description": "Catch falling fruits using your body motion!",
+            "thumbnail": "/games/fruit-catcher/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Motion",
+                "AI",
+                "Arcade"
+            ],
+            "seo": {
+                "title": "Fruit Catcher - Webcam Motion Game",
+                "description": "Play Fruit Catcher using your webcam motion detection. No controller needed!",
+                "keywords": [
+                    "fruit catcher",
+                    "motion game",
+                    "webcam game",
+                    "motion detection"
+                ]
+            }
+        },
+        "zh": {
+            "title": "接水果",
+            "description": "通过身体移动来捕捉掉落的水果！",
+            "thumbnail": "/games/fruit-catcher/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "体感",
+                "AI",
+                "街机"
+            ],
+            "seo": {
+                "title": "接水果 - 网页摄像头感应游戏",
+                "description": "无需控制器，仅需摄像头即可体验接水果游戏！",
+                "keywords": [
+                    "接水果",
+                    "体感游戏",
+                    "摄像头游戏",
+                    "动作感应"
+                ]
+            }
+        }
+    }
+]

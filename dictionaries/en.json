@@ -1,0 +1,18 @@
+{
+  "common": {
+    "start_game": "Start Game",
+    "back_to_home": "Back to Home",
+    "play_now": "Play Now",
+    "exit": "Exit",
+    "select_language": "Language"
+  },
+  "home": {
+    "hero_title": "Motion Play Platform",
+    "hero_subtitle": "Experience a new way of interaction. No extra hardware needed, just your webcam.",
+    "featured_games": "Featured Games",
+    "more_coming_soon_title": "More Coming Soon",
+    "more_coming_soon_desc": "We are developing new motion sensing games every week.",
+    "no_hardware_title": "No Hardware Needed",
+    "no_hardware_desc": "Just your PC's built-in webcam."
+  }
+}

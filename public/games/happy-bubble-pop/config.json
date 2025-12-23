@@ -1,0 +1,55 @@
+[
+    {
+        "id": "happy-bubble-pop",
+        "en": {
+            "title": "Happy Bubble Pop",
+            "description": "Colorful bubbles keep popping up. Reach out and pop them to relax!",
+            "thumbnail": "/games/happy-bubble-pop/thumbnail.png",
+            "category": "Casual",
+            "tags": [
+                "Hand",
+                "Motion",
+                "Relaxing",
+                "AI"
+            ],
+            "seo": {
+                "title": "Happy Bubble Pop - AI Vision Interactive Game",
+                "description": "Use AI vision to pop colorful bubbles in the air for a relaxing experience.",
+                "keywords": [
+                    "happy bubble pop",
+                    "ai game",
+                    "motion sensing",
+                    "web game",
+                    "hand tracking",
+                    "relaxing game",
+                    "pop bubbles"
+                ]
+            }
+        },
+        "zh": {
+            "title": "开心戳泡泡",
+            "description": "不断冒出的彩色泡泡，伸手戳破它们，超级解压！",
+            "thumbnail": "/games/happy-bubble-pop/thumbnail.png",
+            "category": "休闲",
+            "tags": [
+                "手部交互",
+                "动作感应",
+                "解压",
+                "AI"
+            ],
+            "seo": {
+                "title": "开心戳泡泡 - AI 视觉交互游戏",
+                "description": "使用 AI 视觉识别技术，在空中戳破彩色泡泡，享受轻松解压的互动体验。",
+                "keywords": [
+                    "开心戳泡泡",
+                    "ai游戏",
+                    "动作感应",
+                    "网页游戏",
+                    "视觉交互",
+                    "解压游戏",
+                    "戳泡泡"
+                ]
+            }
+        }
+    }
+]
