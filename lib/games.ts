@@ -192,6 +192,53 @@ export const games: Game[] = [
                 ]
             }
         }
+    },
+    {
+        "id": "power-generator",
+        "en": {
+            "title": "Power Generator",
+            "description": "Rotate your arm wildly like a hand-crank generator! Faster rotation leads to brighter light.",
+            "thumbnail": "/games/power-generator/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Motion",
+                "AI",
+                "Fitness"
+            ],
+            "seo": {
+                "title": "Power Generator AI - Webcam Power Game",
+                "description": "Generate power by rotating your arm in front of the webcam. A fun AI vision motion game.",
+                "keywords": [
+                    "power generator",
+                    "motion game",
+                    "webcam game",
+                    "hand tracking",
+                    "fitness game"
+                ]
+            }
+        },
+        "zh": {
+            "title": "手摇发电机",
+            "description": "疯狂转动手臂来发电！转得越快，灯泡越亮。",
+            "thumbnail": "/games/power-generator/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "体感",
+                "AI",
+                "健身"
+            ],
+            "seo": {
+                "title": "手摇发电机 AI - 摄像头发电游戏",
+                "description": "对着摄像头旋转手臂，模拟手摇发电机。有趣的 AI 视觉体感游戏。",
+                "keywords": [
+                    "手摇发电机",
+                    "体感游戏",
+                    "动作感应",
+                    "手势识别",
+                    "健身游戏"
+                ]
+            }
+        }
     }
 
 ];
