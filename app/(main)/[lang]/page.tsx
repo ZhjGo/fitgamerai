@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
     const { lang } = await params;
-    const currentLang = lang as "en" | "zh";
+    const currentLang = (lang === "zh" ? "zh" : "en") as "en" | "zh";
     const dict = await getDictionary(currentLang);
 
     return (

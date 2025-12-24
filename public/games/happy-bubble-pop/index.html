@@ -228,7 +228,7 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="video-container">
-            <video id="webcam" autoplay playsinline></video>
+            <video id="webcam" autoplay playsinline muted></video>
         </div>
 
         <!-- HUD -->
@@ -239,6 +239,7 @@
         <div id="loading-screen" class="overlay">
             <div class="spinner"></div>
             <p id="t-loading">正在唤醒 AI 视觉组件...</p>
+            <p id="loading-status" style="font-size: 14px; opacity: 0.6; margin-top: 10px;"></p>
         </div>
 
         <!-- Start Screen -->
@@ -468,7 +469,9 @@
         resize();
 
         async function initAI() {
+            const status = document.getElementById('loading-status');
             try {
+                status.innerText = "正在加载手势识别模型...";
                 const vision = await FilesetResolver.forVisionTasks(
                     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
                 );
@@ -480,21 +483,52 @@
                     runningMode: "VIDEO",
                     numHands: 2
                 });
+
+                status.innerText = "正在开启高清摄像头...";
                 await setupCamera();
+
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             } catch (err) {
                 console.error(err);
-                alert("Error: Camera or AI model failed. Please check permissions.");
+                status.innerText = "启动失败: " + err.message;
+                status.style.color = "#ff3b30";
+
+                if (err.name === "NotAllowedError") {
+                    status.innerText = "请允许访问摄像头以开始游戏";
+                }
             }
         }
 
         async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 640, height: 480, facingMode: "user" }
-            });
-            video.srcObject = stream;
-            return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
+            const constraints = {
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            };
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve(video);
+                    };
+                });
+            } catch (e) {
+                // 如果理想配置失败，尝试极速兼容模式
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve(video);
+                    };
+                });
+            }
         }
 
         // --- Normalization & Smoothing Logic ---

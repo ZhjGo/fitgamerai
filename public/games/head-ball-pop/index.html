@@ -209,7 +209,7 @@
 <body>
     <div id="game-container">
         <img id="beach-bg" src="beach-bg.jpeg" alt="Beach Background">
-        <video id="webcam" autoplay playsinline></video>
+        <video id="webcam" autoplay playsinline muted></video>
         <canvas id="gameCanvas"></canvas>
 
         <div id="hud">
@@ -229,7 +229,8 @@
 
         <div id="loading-screen" class="screen">
             <div class="loading-spinner"></div>
-            <p id="loading-text">Waking up AI Vision...</p>
+            <p id="loading-text">正在唤醒 AI 视觉组件...</p>
+            <p id="loading-status" style="font-size: 14px; opacity: 0.6; margin-top: 10px;"></p>
         </div>
 
         <div id="start-screen" class="screen" style="display: none;">
@@ -411,7 +412,9 @@
         }
 
         async function initAI() {
+            const status = document.getElementById('loading-status');
             try {
+                status.innerText = "数据解析中...";
                 const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
                 faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
                     baseOptions: {
@@ -421,19 +424,51 @@
                     runningMode: "VIDEO",
                     numFaces: 1
                 });
+
+                status.innerText = "获取摄像头权限...";
                 await setupCamera();
+
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             } catch (err) {
                 console.error(err);
-                alert("AI Error! Please try running from a local web server (http://). Local file access (file://) is restricted by browsers.");
+                status.innerText = "启动失败: " + err.message;
+                status.style.color = "#ff3b30";
+
+                if (err.name === "NotAllowedError") {
+                    status.innerText = "请允许访问摄像头以开始游戏";
+                }
             }
         }
 
         async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
-            video.srcObject = stream;
-            return new Promise(res => video.onloadedmetadata = () => res());
+            const constraints = {
+                video: {
+                    facingMode: "user",
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            };
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                return new Promise(res => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        res();
+                    };
+                });
+            } catch (e) {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                return new Promise(res => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        res();
+                    };
+                });
+            }
         }
 
         function resize() {

@@ -212,7 +212,7 @@
         <canvas id="game-canvas"></canvas>
 
         <div id="video-container">
-            <video id="webcam" autoplay playsinline></video>
+            <video id="webcam" autoplay playsinline muted></video>
         </div>
 
         <div id="score-display" class="hud-capsule">
@@ -230,6 +230,7 @@
         <div id="loading-screen">
             <div class="spinner"></div>
             <p id="loading-text">正在初始化 AI...</p>
+            <p id="loading-status" style="font-size: 14px; opacity: 0.6; margin-top: 10px;"></p>
         </div>
 
         <div id="calibration-hint">请对准摄像头</div>
@@ -475,7 +476,9 @@
 
         // --- AI Logic ---
         async function initAI() {
+            const status = document.getElementById('loading-status');
             try {
+                status.innerText = "数据解析中...";
                 const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
                 faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
                     baseOptions: {
@@ -487,16 +490,29 @@
                     numFaces: 1
                 });
 
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                status.innerText = "获取摄像头权限...";
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "user",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                });
                 video.srcObject = stream;
                 video.addEventListener('loadeddata', () => {
+                    video.play();
                     document.getElementById('loading-screen').style.opacity = 0;
                     setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
                     predict();
                 });
             } catch (err) {
                 console.error(err);
-                document.getElementById('loading-text').innerText = "Camera Error";
+                status.innerText = "错误: " + err.message;
+                status.style.color = "#ff3b30";
+
+                if (err.name === "NotAllowedError") {
+                    status.innerText = "请授权摄像头访问权限";
+                }
             }
         }
 
