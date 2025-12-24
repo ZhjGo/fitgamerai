@@ -63,7 +63,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                             <h3 className={`font-bold leading-tight ${index === 0 ? "text-3xl" : "text-xl"}`}>
                                 {game[currentLang].title}
                             </h3>
-                            <p className="text-sm text-white/60 line-clamp-2">
+                            <p className="text-sm text-white/80 font-bold line-clamp-2">
                                 {game[currentLang].description}
                             </p>
 
