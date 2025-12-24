@@ -7,7 +7,12 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/en");
+    const savedLang = localStorage.getItem("preferred-lang");
+    if (savedLang && (savedLang === "en" || savedLang === "zh")) {
+      router.replace(`/${savedLang}`);
+    } else {
+      router.replace("/en");
+    }
   }, [router]);
 
   return (

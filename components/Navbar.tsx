@@ -13,6 +13,7 @@ export default function Navbar() {
 
     const toggleLanguage = () => {
         const newLang = lang === "en" ? "zh" : "en";
+        localStorage.setItem("preferred-lang", newLang);
         const newPath = pathname.replace(`/${lang}`, `/${newLang}`);
         router.push(newPath);
     };
