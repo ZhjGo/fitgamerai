@@ -471,18 +471,32 @@
         async function initAI() {
             const status = document.getElementById('loading-status');
             try {
-                status.innerText = "正在加载手势识别模型...";
+                status.innerText = "正在加载手势识别模型 (GPU)...";
                 const vision = await FilesetResolver.forVisionTasks(
                     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
                 );
-                handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
-                        delegate: "GPU"
-                    },
-                    runningMode: "VIDEO",
-                    numHands: 2
-                });
+
+                try {
+                    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+                            delegate: "GPU"
+                        },
+                        runningMode: "VIDEO",
+                        numHands: 2
+                    });
+                } catch (gpuError) {
+                    console.warn("GPU 模式启动失败，尝试回退到 CPU:", gpuError);
+                    status.innerText = "切换到 CPU 模式 (可能稍慢)...";
+                    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+                            delegate: "CPU"
+                        },
+                        runningMode: "VIDEO",
+                        numHands: 2
+                    });
+                }
 
                 status.innerText = "正在开启高清摄像头...";
                 await setupCamera();
@@ -490,13 +504,21 @@
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             } catch (err) {
-                console.error(err);
+                console.error("AI 初始化最终失败:", err);
                 status.innerText = "启动失败: " + err.message;
                 status.style.color = "#ff3b30";
 
                 if (err.name === "NotAllowedError") {
                     status.innerText = "请允许访问摄像头以开始游戏";
                 }
+
+                // 增加更详细的诊断信息
+                const errorDetail = document.createElement('div');
+                errorDetail.style.fontSize = '10px';
+                errorDetail.style.marginTop = '10px';
+                errorDetail.style.textAlign = 'left';
+                errorDetail.innerText = err.stack;
+                status.appendChild(errorDetail);
             }
         }
 

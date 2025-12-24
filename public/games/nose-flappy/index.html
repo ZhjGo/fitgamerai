@@ -478,17 +478,32 @@
         async function initAI() {
             const status = document.getElementById('loading-status');
             try {
-                status.innerText = "数据解析中...";
+                status.innerText = "数据解析中 (GPU)...";
                 const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
-                faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-                        delegate: "GPU"
-                    },
-                    outputFaceBlendshapes: false,
-                    runningMode: "VIDEO",
-                    numFaces: 1
-                });
+
+                try {
+                    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+                            delegate: "GPU"
+                        },
+                        outputFaceBlendshapes: false,
+                        runningMode: "VIDEO",
+                        numFaces: 1
+                    });
+                } catch (gpuError) {
+                    console.warn("GPU 模式启动失败，尝试回退到 CPU:", gpuError);
+                    status.innerText = "切换到 CPU 模式...";
+                    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+                            delegate: "CPU"
+                        },
+                        outputFaceBlendshapes: false,
+                        runningMode: "VIDEO",
+                        numFaces: 1
+                    });
+                }
 
                 status.innerText = "获取摄像头权限...";
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -506,13 +521,21 @@
                     predict();
                 });
             } catch (err) {
-                console.error(err);
+                console.error("AI 初始化最终失败:", err);
                 status.innerText = "错误: " + err.message;
                 status.style.color = "#ff3b30";
 
                 if (err.name === "NotAllowedError") {
                     status.innerText = "请授权摄像头访问权限";
                 }
+
+                // 增加更详细的诊断信息
+                const errorDetail = document.createElement('div');
+                errorDetail.style.fontSize = '10px';
+                errorDetail.style.marginTop = '10px';
+                errorDetail.style.textAlign = 'left';
+                errorDetail.innerText = err.stack;
+                status.appendChild(errorDetail);
             }
         }
 

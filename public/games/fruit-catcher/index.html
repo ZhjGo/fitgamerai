@@ -392,18 +392,32 @@
         async function initAI() {
             const status = document.getElementById('loading-status');
             try {
-                status.innerText = "正在初始化 AI 模型...";
+                status.innerText = "正在初始化 AI 模型 (GPU)...";
                 const vision = await FilesetResolver.forVisionTasks(
                     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
                 );
-                faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-                        delegate: "GPU"
-                    },
-                    runningMode: "VIDEO",
-                    numFaces: 1
-                });
+
+                try {
+                    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+                            delegate: "GPU"
+                        },
+                        runningMode: "VIDEO",
+                        numFaces: 1
+                    });
+                } catch (gpuError) {
+                    console.warn("GPU 模式启动失败，尝试回退到 CPU:", gpuError);
+                    status.innerText = "GPU 不可用，正在切换到 CPU 模式...";
+                    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+                            delegate: "CPU"
+                        },
+                        runningMode: "VIDEO",
+                        numFaces: 1
+                    });
+                }
 
                 status.innerText = "正在启动摄像头...";
                 await setupCamera();
@@ -411,14 +425,19 @@
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             } catch (err) {
-                console.error(err);
+                console.error("AI 初始化最终失败:", err);
                 status.innerText = "加载失败: " + err.message;
                 status.style.color = "#ff3b30";
-                // 如果 GPU 失败，尝试回退到 CPU
-                if (err.message.includes("GPU") || err.message.includes("webgl")) {
-                    status.innerText = "尝试回退到 CPU 模式...";
-                    // 可以在此处重新尝试创建，但在简单实现中我们先报错
-                }
+
+                // 增加更详细的诊断信息
+                const errorDetail = document.createElement('div');
+                errorDetail.style.fontSize = '10px';
+                errorDetail.style.marginTop = '10px';
+                errorDetail.style.textAlign = 'left';
+                errorDetail.style.maxHeight = '100px';
+                errorDetail.style.overflow = 'auto';
+                errorDetail.innerText = err.stack;
+                status.appendChild(errorDetail);
             }
         }
 
