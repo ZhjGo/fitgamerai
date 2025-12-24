@@ -50,7 +50,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                             : "md:col-span-1 md:row-span-1"
                             } flex flex-col justify-end group cursor-pointer`}
                     >
-                        <Link href={`/${lang}/play/${game.id}`} className="absolute inset-0">
+                        <Link href={`/${lang}/play/${game.id}`} className="absolute inset-0 z-0">
                             <div
                                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                                 style={{ backgroundImage: `url(${game[currentLang].thumbnail})` }}
@@ -58,7 +58,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         </Link>
 
-                        <div className="relative z-10 space-y-2">
+                        <Link href={`/${lang}/play/${game.id}`} className="relative z-10 space-y-2 block">
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md">
                                     {game[currentLang].category}
@@ -71,16 +71,13 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                                 {game[currentLang].description}
                             </p>
 
-                            <Link
-                                href={`/${lang}/play/${game.id}`}
-                                className="inline-flex items-center gap-2 mt-4 text-sm font-semibold hover:text-white transition-colors apple-button"
-                            >
+                            <div className="inline-flex items-center gap-2 mt-4 text-sm font-semibold hover:text-white transition-colors apple-button">
                                 <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center">
                                     <Play size={14} fill="currentColor" />
                                 </div>
                                 {dict.common.play_now}
-                            </Link>
-                        </div>
+                            </div>
+                        </Link>
                     </GlassCard>
                 ))}
 
