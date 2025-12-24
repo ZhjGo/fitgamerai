@@ -413,82 +413,126 @@
 
         async function initAI() {
             const status = document.getElementById('loading-status');
-            try {
-                status.innerText = "数据解析中 (GPU)...";
-                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+            const urlParams = new URLSearchParams(window.location.search);
+            const isDebug = urlParams.get('debug') === 'true';
+
+            const CDN_SOURCES = [
+                { name: "jsDelivr", wasm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "Unpkg", wasm: "https://unpkg.com/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "Zhihu", wasm: "https://unpkg.zhimg.com/@mediapipe/tasks-vision@0.10.3/wasm" }
+            ];
+            const MODEL_SOURCES = [
+                "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+                "https://cdn.jsdelivr.net/npm/@mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+            ];
+
+            async function tryLoadAI(cdnIndex = 0, modelIndex = 0) {
+                const cdn = CDN_SOURCES[cdnIndex];
+                const modelPath = MODEL_SOURCES[modelIndex];
 
                 try {
-                    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-                        baseOptions: {
-                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-                            delegate: "GPU"
-                        },
-                        runningMode: "VIDEO",
-                        numFaces: 1
-                    });
-                } catch (gpuError) {
-                    console.warn("GPU 模式启动失败，尝试回退到 CPU:", gpuError);
-                    status.innerText = "切换到 CPU 模式 (可能稍慢)...";
-                    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-                        baseOptions: {
-                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-                            delegate: "CPU"
-                        },
-                        runningMode: "VIDEO",
-                        numFaces: 1
-                    });
+                    if (isDebug) status.innerText = `数据解析中 (${cdn.name})...`;
+                    const vision = await FilesetResolver.forVisionTasks(cdn.wasm);
+
+                    try {
+                        faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                            baseOptions: {
+                                modelAssetPath: modelPath,
+                                delegate: "GPU"
+                            },
+                            runningMode: "VIDEO",
+                            numFaces: 1
+                        });
+                    } catch (gpuError) {
+                        console.warn("GPU 模式失败，回退到 CPU:", gpuError);
+                        if (isDebug) status.innerText = "切换到 CPU 模式...";
+                        faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                            baseOptions: {
+                                modelAssetPath: modelPath,
+                                delegate: "CPU"
+                            },
+                            runningMode: "VIDEO",
+                            numFaces: 1
+                        });
+                    }
+                    return true;
+                } catch (err) {
+                    console.error(`从 ${cdn.name} 加载失败:`, err);
+                    if (cdnIndex < CDN_SOURCES.length - 1) {
+                        if (isDebug) status.innerText = `联络加速节点中...`;
+                        return await tryLoadAI(cdnIndex + 1, modelIndex);
+                    } else if (modelIndex < MODEL_SOURCES.length - 1) {
+                        if (isDebug) status.innerText = `重试模型资源...`;
+                        return await tryLoadAI(0, modelIndex + 1);
+                    }
+                    throw err;
                 }
+            }
 
-                status.innerText = "获取摄像头权限...";
+            try {
+                await tryLoadAI();
+                status.innerText = "";
                 await setupCamera();
-
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             } catch (err) {
                 console.error("AI 初始化最终失败:", err);
-                status.innerText = "启动失败: " + err.message;
+                status.innerText = "网络连接失败: 请检查您的网络连接并刷新重试。";
                 status.style.color = "#ff3b30";
 
                 if (err.name === "NotAllowedError") {
                     status.innerText = "请允许访问摄像头以开始游戏";
                 }
 
-                // 增加更详细的诊断信息
-                const errorDetail = document.createElement('div');
-                errorDetail.style.fontSize = '10px';
-                errorDetail.style.marginTop = '10px';
-                errorDetail.style.textAlign = 'left';
-                errorDetail.style.maxHeight = '100px';
-                errorDetail.style.overflow = 'auto';
-                errorDetail.style.background = 'rgba(0,0,0,0.5)';
-                errorDetail.style.padding = '5px';
-                errorDetail.innerText = err.stack;
-                status.appendChild(errorDetail);
+                if (isDebug) {
+                    const debugToggle = document.createElement('div');
+                    debugToggle.innerText = "查看错误详情 ▼";
+                    debugToggle.style.fontSize = '12px';
+                    debugToggle.style.marginTop = '20px';
+                    debugToggle.style.opacity = '0.5';
+                    debugToggle.style.cursor = 'pointer';
 
-                const copyBtn = document.createElement('button');
-                copyBtn.innerText = "一键复制错误堆栈";
-                copyBtn.style.marginTop = "10px";
-                copyBtn.style.padding = "8px 15px";
-                copyBtn.style.borderRadius = "15px";
-                copyBtn.style.border = "none";
-                copyBtn.style.background = "#fff";
-                copyBtn.style.color = "#000";
-                copyBtn.style.fontSize = "12px";
-                copyBtn.style.fontWeight = "bold";
-                copyBtn.style.cursor = "pointer";
-                copyBtn.onclick = () => {
-                    navigator.clipboard.writeText(err.stack).then(() => {
-                        copyBtn.innerText = "✅ 已复制到剪贴板";
-                        copyBtn.style.background = "#34c759";
-                        copyBtn.style.color = "#fff";
-                        setTimeout(() => {
-                            copyBtn.innerText = "一键复制错误堆栈";
-                            copyBtn.style.background = "#fff";
-                            copyBtn.style.color = "#000";
-                        }, 2000);
-                    });
-                };
-                status.appendChild(copyBtn);
+                    const debugInfo = document.createElement('div');
+                    debugInfo.style.display = 'none';
+                    debugInfo.style.marginTop = '10px';
+
+                    const errorDetail = document.createElement('div');
+                    errorDetail.style.fontSize = '10px';
+                    errorDetail.style.textAlign = 'left';
+                    errorDetail.style.maxHeight = '100px';
+                    errorDetail.style.overflow = 'auto';
+                    errorDetail.style.background = 'rgba(0,0,0,0.5)';
+                    errorDetail.style.padding = '5px';
+                    errorDetail.innerText = err.stack;
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.innerText = "复制错误信息";
+                    copyBtn.style.marginTop = "10px";
+                    copyBtn.style.padding = "5px 10px";
+                    copyBtn.style.borderRadius = "10px";
+                    copyBtn.style.border = "none";
+                    copyBtn.style.background = "rgba(255,255,255,0.2)";
+                    copyBtn.style.color = "#fff";
+                    copyBtn.style.fontSize = "10px";
+                    copyBtn.onclick = () => {
+                        navigator.clipboard.writeText(err.stack).then(() => {
+                            copyBtn.innerText = "✅ 已复制";
+                            setTimeout(() => copyBtn.innerText = "复制错误信息", 2000);
+                        });
+                    };
+
+                    debugInfo.appendChild(errorDetail);
+                    debugInfo.appendChild(copyBtn);
+
+                    debugToggle.onclick = () => {
+                        const isHidden = debugInfo.style.display === 'none';
+                        debugInfo.style.display = isHidden ? 'block' : 'none';
+                        debugToggle.innerText = isHidden ? "隐藏错误详情 ▲" : "查看错误详情 ▼";
+                    };
+
+                    status.appendChild(debugToggle);
+                    status.appendChild(debugInfo);
+                }
             }
         }
 
