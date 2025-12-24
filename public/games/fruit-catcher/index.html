@@ -257,7 +257,9 @@
                 start: "开始游戏",
                 gameOver: "游戏结束!",
                 restart: "再玩一次",
-                scorePrefix: "得分: "
+                scorePrefix: "得分: ",
+                netError: "网络连接失败：请检查网络连接并刷新重试。",
+                cameraError: "摄像头启动失败：请确保已授权摄像头权限并刷新页面。"
             },
             en: {
                 loading: "Loading Game...",
@@ -266,7 +268,9 @@
                 start: "Start Game",
                 gameOver: "Game Over!",
                 restart: "Play Again",
-                scorePrefix: "Score: "
+                scorePrefix: "Score: ",
+                netError: "Network failed. Please check connection and refresh.",
+                cameraError: "Camera failed. Please allow camera access and refresh."
             }
         };
 
@@ -395,9 +399,11 @@
             const isDebug = urlParams.get('debug') === 'true';
 
             const CDN_SOURCES = [
-                { name: "jsDelivr", wasm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
-                { name: "Unpkg", wasm: "https://unpkg.com/@mediapipe/tasks-vision@0.10.3/wasm" },
-                { name: "Zhihu", wasm: "https://unpkg.zhimg.com/@mediapipe/tasks-vision@0.10.3/wasm" }
+                { name: "jsd Mirror (国内加速)", wasm: "https://jsd.cdn.zzko.cn/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "jsDelivr (Fastly)", wasm: "https://fastly.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "jsDelivr (GCore)", wasm: "https://gcore.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "jsDelivr (官方)", wasm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "Unpkg", wasm: "https://unpkg.com/@mediapipe/tasks-vision@0.10.3/wasm" }
             ];
             const MODEL_SOURCES = [
                 "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
@@ -446,67 +452,70 @@
                 }
             }
 
+            // 1. 先加载 AI 模型
             try {
                 await tryLoadAI();
-                status.innerText = "";
+            } catch (err) {
+                console.error("AI 模型初始化失败:", err);
+                showError(t.netError, err);
+                return;
+            }
+
+            // 2. 再尝试开启摄像头
+            try {
+                status.innerText = lang === 'zh' ? "正在开启摄像头..." : "Starting Camera...";
                 await setupCamera();
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             } catch (err) {
-                console.error("AI 最终初始化失败:", err);
-                status.innerText = "网络连接失败: 请检查网络连接并刷新重试。";
-                status.style.color = "#ff3b30";
+                console.error("摄像头初始化失败:", err);
+                showError(t.cameraError, err);
+            }
+        }
 
-                if (isDebug) {
-                    const debugToggle = document.createElement('div');
-                    debugToggle.innerText = "查看错误详情 ▼";
-                    debugToggle.style.fontSize = '12px';
-                    debugToggle.style.marginTop = '20px';
-                    debugToggle.style.opacity = '0.5';
-                    debugToggle.style.cursor = 'pointer';
+        function showError(message, err) {
+            const status = document.getElementById('loading-status');
+            const isDebug = urlParams.get('debug') === 'true';
+            status.innerText = message;
+            status.style.color = "#ff3b30";
 
-                    const debugInfo = document.createElement('div');
-                    debugInfo.style.display = 'none';
-                    debugInfo.style.marginTop = '10px';
+            if (isDebug) {
+                const debugToggle = document.createElement('div');
+                debugToggle.innerText = "查看详情 ▼";
+                debugToggle.style.fontSize = '12px';
+                debugToggle.style.marginTop = '20px';
+                debugToggle.style.opacity = '0.5';
+                debugToggle.style.cursor = 'pointer';
 
-                    const errorDetail = document.createElement('div');
-                    errorDetail.id = "error-stack";
-                    errorDetail.style.fontSize = '10px';
-                    errorDetail.style.textAlign = 'left';
-                    errorDetail.style.maxHeight = '100px';
-                    errorDetail.style.overflow = 'auto';
-                    errorDetail.style.background = 'rgba(0,0,0,0.5)';
-                    errorDetail.style.padding = '5px';
-                    errorDetail.innerText = err.stack;
+                const debugInfo = document.createElement('div');
+                debugInfo.style.display = 'none';
+                debugInfo.style.marginTop = '10px';
 
-                    const copyBtn = document.createElement('button');
-                    copyBtn.innerText = "复制错误信息";
-                    copyBtn.style.marginTop = "10px";
-                    copyBtn.style.padding = "5px 10px";
-                    copyBtn.style.borderRadius = "10px";
-                    copyBtn.style.border = "none";
-                    copyBtn.style.background = "rgba(255,255,255,0.2)";
-                    copyBtn.style.color = "#fff";
-                    copyBtn.style.fontSize = "10px";
-                    copyBtn.onclick = () => {
-                        navigator.clipboard.writeText(err.stack).then(() => {
-                            copyBtn.innerText = "✅ 已复制";
-                            setTimeout(() => copyBtn.innerText = "复制错误信息", 2000);
-                        });
-                    };
+                const errorDetail = document.createElement('div');
+                errorDetail.style.fontSize = '10px';
+                errorDetail.style.textAlign = 'left';
+                errorDetail.style.maxHeight = '150px';
+                errorDetail.style.overflow = 'auto';
+                errorDetail.style.background = 'rgba(0,0,0,0.5)';
+                errorDetail.style.padding = '8px';
+                errorDetail.style.lineHeight = '1.4';
 
-                    debugInfo.appendChild(errorDetail);
-                    debugInfo.appendChild(copyBtn);
-
-                    debugToggle.onclick = () => {
-                        const isHidden = debugInfo.style.display === 'none';
-                        debugInfo.style.display = isHidden ? 'block' : 'none';
-                        debugToggle.innerText = isHidden ? "隐藏错误详情 ▲" : "查看错误详情 ▼";
-                    };
-
-                    status.appendChild(debugToggle);
-                    status.appendChild(debugInfo);
+                // 针对网络错误的特殊引导
+                let extraGuide = "";
+                if (message.includes("网络")) {
+                    extraGuide = `<div style="color:#ffcc00;margin-bottom:8px;">💡 提示：若直接打开目录看到 403 是正常的（安全限制）。请测试具体文件：<br><a href="${CDN_SOURCES[0].wasm}/vision_wasm_internal.js" target="_blank" style="color:#007aff">点击测试具体文件加载</a></div>`;
                 }
+
+                errorDetail.innerHTML = extraGuide + `<code>${(err.stack || err.message).replace(/</g, '&lt;')}</code>`;
+
+                debugInfo.appendChild(errorDetail);
+                debugToggle.onclick = () => {
+                    const isHidden = debugInfo.style.display === 'none';
+                    debugInfo.style.display = isHidden ? 'block' : 'none';
+                    debugToggle.innerText = isHidden ? "收起详情 ▲" : "查看详情 ▼";
+                };
+                status.appendChild(debugToggle);
+                status.appendChild(debugInfo);
             }
         }
 
