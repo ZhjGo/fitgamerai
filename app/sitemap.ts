@@ -2,6 +2,8 @@ import { MetadataRoute } from 'next'
 import { games } from '@/lib/games'
 import { Game } from '@/types/game'
 
+export const dynamic = 'force-static'
+
 const BASE_URL = 'https://fitgamerai.com'
 
 export default function sitemap(): MetadataRoute.Sitemap {
