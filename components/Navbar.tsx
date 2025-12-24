@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Languages, Home } from "lucide-react";
+import { Languages, Home, Github } from "lucide-react";
 
 export default function Navbar() {
     const params = useParams();
@@ -34,15 +34,27 @@ export default function Navbar() {
 
                 <div className="flex-1" />
 
-                <button
-                    onClick={toggleLanguage}
-                    className="apple-button group flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
-                >
-                    <Languages size={16} className="text-white/60 group-hover:text-white transition-colors" />
-                    <span className="text-xs font-semibold uppercase tracking-widest text-white/80">
-                        {lang === "en" ? "中文" : "EN"}
-                    </span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <a
+                        href="https://github.com/ZhjGo/fitgamerai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="apple-button w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all border border-white/5"
+                        title="View Source on GitHub"
+                    >
+                        <Github size={18} className="text-white/60 hover:text-white" />
+                    </a>
+
+                    <button
+                        onClick={toggleLanguage}
+                        className="apple-button group flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
+                    >
+                        <Languages size={16} className="text-white/60 group-hover:text-white transition-colors" />
+                        <span className="text-xs font-semibold uppercase tracking-widest text-white/80">
+                            {lang === "en" ? "中文" : "EN"}
+                        </span>
+                    </button>
+                </div>
             </motion.nav>
         </div>
     );

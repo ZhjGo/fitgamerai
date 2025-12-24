@@ -22,7 +22,6 @@ FitGamerAI 是一个基于 Next.js 的创新体感互动游戏平台。通过先
 - **🚀 极致性能**：基于 Next.js 15 构建，支持静态导出，极其适合 Cloudflare Pages 或 Vercel 部署。
 - **✨ 现代 UI 设计**：采用类 iOS 18 的毛玻璃效果（Glassmorphism），动效丝滑（Framer Motion）。
 - **🔍 SEO 深度优化**：包含动态生成的站点地图（Sitemap）、robots.txt 及完善的 Meta 标签体系。
-- **📊 数据统计**：内置 Google Analytics 4 (GA4)，轻松追踪用户行为。
 
 ### 技术栈
 - **框架**: Next.js 15 (App Router)
@@ -62,7 +61,6 @@ FitGamerAI is an innovative AI-powered motion-sensing game platform built with N
 - **🚀 High Performance**: Built with Next.js 15, optimized for speed, and ready for Static Export (perfect for Cloudflare Pages or Vercel).
 - **✨ Modern UI/UX**: Sleek Glassmorphism design inspired by iOS 18, featuring smooth animations via Framer Motion.
 - **🔍 SEO Optimized**: Includes dynamic Sitemap generation, robots.txt, and comprehensive Metadata for all pages.
-- **📊 Analytics Ready**: Integrated with Google Analytics 4 (GA4) to track engagement.
 
 ### Tech Stack
 - **Framework**: Next.js 15 (App Router)
