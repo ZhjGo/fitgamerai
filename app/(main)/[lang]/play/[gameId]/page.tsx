@@ -19,9 +19,12 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     if (!game) return { title: "Game Not Found" };
 
     return {
-        title: `${game[currentLang].seo.title} | Motion Play`,
+        title: game[currentLang].seo.title,
         description: game[currentLang].seo.description,
         keywords: game[currentLang].seo.keywords,
+        alternates: {
+            canonical: `/${lang}/play/${gameId}`,
+        },
     };
 }
 

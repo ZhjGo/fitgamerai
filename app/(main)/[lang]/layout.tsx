@@ -11,12 +11,41 @@ export async function generateStaticParams() {
 
 export const metadata: Metadata = {
     metadataBase: new URL("https://fitgamerai.com"),
+    title: {
+        default: "FitGamerAI - Motion Sensing Games",
+        template: "%s | FitGamerAI"
+    },
+    description: "Experience the future of gaming with AI-powered motion sensing. Play with your body, no hardware required.",
     alternates: {
         canonical: "/",
+        languages: {
+            'en-US': '/en',
+            'zh-CN': '/zh',
+        },
     },
     icons: {
         icon: "/icon.png",
         apple: "/icon.png",
+    },
+    openGraph: {
+        type: "website",
+        locale: "en_US",
+        url: "https://fitgamerai.com",
+        siteName: "FitGamerAI",
+        images: [
+            {
+                url: "/icon.png",
+                width: 512,
+                height: 512,
+                alt: "FitGamerAI Logo",
+            },
+        ],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "FitGamerAI - Motion Sensing Games",
+        description: "AI-powered motion sensing games. Play with your body, no hardware required.",
+        images: ["/icon.png"],
     },
 };
 

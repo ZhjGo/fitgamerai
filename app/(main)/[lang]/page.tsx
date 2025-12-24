@@ -15,6 +15,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     return {
         title: dict.home.hero_title,
         description: dict.home.hero_subtitle,
+        keywords: dict.home.seo_keywords,
+        alternates: {
+            canonical: `/${lang}`,
+        },
     };
 }
 
