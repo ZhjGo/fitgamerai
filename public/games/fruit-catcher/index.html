@@ -431,13 +431,41 @@
 
                 // 增加更详细的诊断信息
                 const errorDetail = document.createElement('div');
+                errorDetail.id = "error-stack";
                 errorDetail.style.fontSize = '10px';
                 errorDetail.style.marginTop = '10px';
                 errorDetail.style.textAlign = 'left';
                 errorDetail.style.maxHeight = '100px';
                 errorDetail.style.overflow = 'auto';
+                errorDetail.style.background = 'rgba(0,0,0,0.5)';
+                errorDetail.style.padding = '5px';
                 errorDetail.innerText = err.stack;
                 status.appendChild(errorDetail);
+
+                const copyBtn = document.createElement('button');
+                copyBtn.innerText = "一键复制错误堆栈";
+                copyBtn.style.marginTop = "10px";
+                copyBtn.style.padding = "8px 15px";
+                copyBtn.style.borderRadius = "15px";
+                copyBtn.style.border = "none";
+                copyBtn.style.background = "#fff";
+                copyBtn.style.color = "#000";
+                copyBtn.style.fontSize = "12px";
+                copyBtn.style.fontWeight = "bold";
+                copyBtn.style.cursor = "pointer";
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(err.stack).then(() => {
+                        copyBtn.innerText = "✅ 已复制到剪贴板";
+                        copyBtn.style.background = "#34c759";
+                        copyBtn.style.color = "#fff";
+                        setTimeout(() => {
+                            copyBtn.innerText = "一键复制错误堆栈";
+                            copyBtn.style.background = "#fff";
+                            copyBtn.style.color = "#000";
+                        }, 2000);
+                    });
+                };
+                status.appendChild(copyBtn);
             }
         }
 
