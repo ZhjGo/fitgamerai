@@ -2,6 +2,102 @@ import { Game } from "@/types/game";
 
 export const games: Game[] = [
     {
+        "id": "breakout",
+        "en": {
+            "title": "Breakout",
+            "description": "Classic Breakout game! Move your head to control the paddle and open your mouth to fire missiles!",
+            "thumbnail": "/games/breakout/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Head Control",
+                "Classic",
+                "AI",
+                "Arcade"
+            ],
+            "seo": {
+                "title": "Breakout - Head Motion Classic Game",
+                "description": "Play classic Breakout with AI head tracking. Control the paddle with your head and fire missiles with your mouth!",
+                "keywords": [
+                    "breakout",
+                    "ai game",
+                    "head tracking",
+                    "motion control",
+                    "retro game"
+                ]
+            }
+        },
+        "zh": {
+            "title": "打砖块",
+            "description": "经典打砖块！移动头部控制挡板，张嘴发射导弹！",
+            "thumbnail": "/games/breakout/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "头部控制",
+                "经典",
+                "AI",
+                "街机"
+            ],
+            "seo": {
+                "title": "打砖块 - 头部动作感应经典游戏",
+                "description": "基于 AI 视觉识别的经典打砖块游戏。通过头部移动控制挡板，张大嘴巴即可发射导弹！",
+                "keywords": [
+                    "打砖块",
+                    "ai游戏",
+                    "动作感应",
+                    "头部追踪",
+                    "经典游戏"
+                ]
+            }
+        }
+    },
+    {
+        "id": "ladder-climber",
+        "en": {
+            "title": "Ladder Climber",
+            "description": "Move your hands alternately to climb. How high can you go?",
+            "thumbnail": "/games/ladder-climber/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Motion",
+                "AI",
+                "Fitness"
+            ],
+            "seo": {
+                "title": "Ladder Climber - AI Motion Game",
+                "description": "An AI-powered climbing game using pose detection for a fitness-focused experience.",
+                "keywords": [
+                    "ladder climber",
+                    "motion game",
+                    "pose detection",
+                    "fitness game",
+                    "webcam game"
+                ]
+            }
+        },
+        "zh": {
+            "title": "爬梯子竞速",
+            "description": "交替移动双手模拟攀爬，看谁爬得更高！",
+            "thumbnail": "/games/ladder-climber/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "体感",
+                "AI",
+                "健身"
+            ],
+            "seo": {
+                "title": "爬梯子竞速 - AI 运动游戏",
+                "description": "通过 AI 视觉识别，模拟真实的爬梯子动作，挑战你的频率极限。",
+                "keywords": [
+                    "爬梯子竞速",
+                    "体感游戏",
+                    "动作感应",
+                    "姿态识别",
+                    "健身游戏"
+                ]
+            }
+        }
+    },
+    {
         "id": "fruit-catcher",
         "en": {
             "title": "Fruit Catcher",
@@ -239,7 +335,8 @@ export const games: Game[] = [
                 ]
             }
         }
-    }
+    },
+
 
 ];
 

@@ -1,0 +1,51 @@
+[
+    {
+        "id": "breakout",
+        "en": {
+            "title": "Breakout",
+            "description": "Classic Breakout game! Move your head to control the paddle and open your mouth to fire missiles!",
+            "thumbnail": "/games/breakout/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Head Control",
+                "Classic",
+                "AI",
+                "Arcade"
+            ],
+            "seo": {
+                "title": "Breakout - Head Motion Classic Game",
+                "description": "Play classic Breakout with AI head tracking. Control the paddle with your head and fire missiles with your mouth!",
+                "keywords": [
+                    "breakout",
+                    "ai game",
+                    "head tracking",
+                    "motion control",
+                    "retro game"
+                ]
+            }
+        },
+        "zh": {
+            "title": "打砖块",
+            "description": "经典打砖块！移动头部控制挡板，张嘴发射导弹！",
+            "thumbnail": "/games/breakout/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "头部控制",
+                "经典",
+                "AI",
+                "街机"
+            ],
+            "seo": {
+                "title": "打砖块 - 头部动作感应经典游戏",
+                "description": "基于 AI 视觉识别的经典打砖块游戏。通过头部移动控制挡板，张大嘴巴即可发射导弹！",
+                "keywords": [
+                    "打砖块",
+                    "ai游戏",
+                    "动作感应",
+                    "头部追踪",
+                    "经典游戏"
+                ]
+            }
+        }
+    }
+]

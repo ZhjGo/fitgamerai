@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ladder Climber AI</title>
+    <style>
+        :root {
+            --ios-bg: #0c1421;
+            --ios-glass: rgba(255, 255, 255, 0.12);
+            --ios-blur: blur(20px);
+            --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --primary-accent: #34c759;
+            --secondary-accent: #007aff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--ios-font);
+            background-color: #000;
+            color: white;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            aspect-ratio: 9/16;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        #bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            filter: brightness(0.4) blur(2px);
+            z-index: 0;
+        }
+
+        canvas {
+            position: relative;
+            z-index: 1;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        #video-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            height: 160px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--ios-glass);
+            transform: scaleX(-1);
+            opacity: 0.8;
+            z-index: 5;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hud {
+            position: absolute;
+            padding: 12px 24px;
+            background: var(--ios-glass);
+            backdrop-filter: var(--ios-blur);
+            -webkit-backdrop-filter: var(--ios-blur);
+            border-radius: 24px;
+            font-weight: 600;
+            font-size: 20px;
+            z-index: 10;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 2px;
+        }
+
+        #height-display {
+            top: 30px;
+            left: 20px;
+        }
+
+        #speed-display {
+            top: 30px;
+            right: 20px;
+        }
+
+        #timer-display {
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: 100px;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .btn {
+            background: var(--primary-accent);
+            color: white;
+            border: none;
+            padding: 18px 48px;
+            border-radius: 32px;
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 30px;
+            box-shadow: 0 10px 20px rgba(52, 199, 89, 0.3);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        h1 {
+            font-size: 42px;
+            background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            font-weight: 800;
+        }
+
+        p {
+            font-size: 18px;
+            opacity: 0.85;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        #loading-screen {
+            z-index: 110;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top: 5px solid var(--primary-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 30px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .climb-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            mix-blend-mode: screen;
+            opacity: 0;
+            transition: opacity 0.1s;
+            background: radial-gradient(circle at center, rgba(52, 199, 89, 0.1) 0%, transparent 70%);
+        }
+
+        .combo-text {
+            position: absolute;
+            font-size: 80px;
+            font-weight: 900;
+            color: var(--primary-accent);
+            text-shadow: 0 0 20px rgba(52, 199, 89, 0.5);
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <img id="bg-image" src="bg.png" alt="Gym Background">
+        <canvas id="gameCanvas"></canvas>
+        <div id="climb-effect" class="climb-effect"></div>
+
+        <div id="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+        </div>
+
+        <!-- HUD -->
+        <div id="height-display" class="hud">
+            <span class="hud-label" id="l-height">高度</span>
+            <span id="height-value">0 m</span>
+        </div>
+        <div id="speed-display" class="hud">
+            <span class="hud-label" id="l-speed">攀爬速度</span>
+            <span id="speed-value">0.0 km/h</span>
+        </div>
+        <div id="timer-display" class="hud">
+            <span class="hud-label" id="l-time">时间</span>
+            <span id="timer-value">60s</span>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="overlay">
+            <div class="spinner"></div>
+            <p id="t-loading">正在准备攀爬设备...</p>
+            <p id="loading-status" style="font-size: 14px; opacity: 0.6; margin-top: 10px;"></p>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="overlay" style="display: none;">
+            <h1 id="t-title">爬梯子竞速</h1>
+            <p id="t-instructions">交替上下移动双手 🖐️<br>就像在爬真实的梯子一样！<br>动作越快，爬得越高 🚀</p>
+            <button id="t-start-btn" class="btn" onclick="startGame()">开始攀爬</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="overlay" style="display: none;">
+            <h1 id="t-game-over">目标达成!</h1>
+            <p id="final-stats-text" style="font-size: 24px; font-weight: bold;"></p>
+            <button id="t-restart-btn" class="btn" onclick="location.reload()">再爬一次</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import {
+            PoseLandmarker,
+            FilesetResolver
+        } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+        // --- I18N ---
+        const translations = {
+            zh: {
+                loading: "正在准备攀爬设备...",
+                title: "爬梯子竞速",
+                instructions: "交替上下移动双手 🖐️<br>就像在爬真实的梯子一样！<br>动作越快，爬得越高 🚀",
+                start: "开始攀爬",
+                gameOver: "目标达成!",
+                restart: "再爬一次",
+                height: "高度",
+                speed: "攀爬速度",
+                time: "时间",
+                statsPrefix: "你爬到了 ",
+                netError: "网络连接失败：请检查网络并尝试加载 MediaPipe 核心文件。",
+                cameraError: "摄像头授权失败：请开启前置摄像头权限。"
+            },
+            en: {
+                loading: "Preparing Equipment...",
+                title: "Ladder Climber",
+                instructions: "Move your hands alternately 🖐️<br>Like you're on a real ladder!<br>Faster frequency, Higher score 🚀",
+                start: "Start Climbing",
+                gameOver: "Top Reached!",
+                restart: "Climb Again",
+                height: "Height",
+                speed: "Speed",
+                time: "Time",
+                statsPrefix: "You reached ",
+                netError: "Network failure: Please check connections and AI library access.",
+                cameraError: "Camera denied: Please grant webcam permissions."
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang') === 'zh' ? 'zh' : 'en';
+        const t = translations[lang];
+
+        function applyTranslations() {
+            document.getElementById('t-loading').innerText = t.loading;
+            document.getElementById('t-title').innerText = t.title;
+            document.getElementById('t-instructions').innerHTML = t.instructions;
+            document.getElementById('t-start-btn').innerText = t.start;
+            document.getElementById('t-game-over').innerText = t.gameOver;
+            document.getElementById('t-restart-btn').innerText = t.restart;
+            document.getElementById('l-height').innerText = t.height;
+            document.getElementById('l-speed').innerText = t.speed;
+            document.getElementById('l-time').innerText = t.time;
+        }
+        applyTranslations();
+
+        // --- SFX (Web Audio API) ---
+        class SoundManager {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            playClimb() {
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // Low mechanical thud
+                const oscLow = this.ctx.createOscillator();
+                const gainLow = this.ctx.createGain();
+                oscLow.type = 'sine';
+                oscLow.frequency.setValueAtTime(60, now);
+                oscLow.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+                gainLow.gain.setValueAtTime(0.2, now);
+                gainLow.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                oscLow.connect(gainLow); gainLow.connect(this.ctx.destination);
+                oscLow.start(); oscLow.stop(now + 0.2);
+
+                // High mechanical click
+                const oscHigh = this.ctx.createOscillator();
+                const gainHigh = this.ctx.createGain();
+                oscHigh.type = 'triangle';
+                oscHigh.frequency.setValueAtTime(1200, now);
+                oscHigh.frequency.exponentialRampToValueAtTime(600, now + 0.05);
+                gainHigh.gain.setValueAtTime(0.05, now);
+                gainHigh.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                oscHigh.connect(gainHigh); gainHigh.connect(this.ctx.destination);
+                oscHigh.start(); oscHigh.stop(now + 0.05);
+
+                // White noise "hiss" for friction
+                const bufferSize = this.ctx.sampleRate * 0.1;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.02, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                noise.connect(noiseGain); noiseGain.connect(this.ctx.destination);
+                noise.start();
+            }
+            playEnd() {
+                this.init();
+                const now = this.ctx.currentTime;
+                // Victory fanfare
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.1);
+                osc.frequency.setValueAtTime(659.25, now + 0.2);
+                osc.frequency.setValueAtTime(880, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(now + 0.6);
+            }
+        }
+        const sfx = new SoundManager();
+
+        // --- GAME LOGIC ---
+        const GAME_DURATION = 60;
+        let score = 0; // meters
+        let timeLeft = GAME_DURATION;
+        let gameActive = false;
+        let poseLandmarker;
+        let video = document.getElementById('webcam');
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+
+        // Movement Detection
+        let leftHandY = 0;
+        let rightHandY = 0;
+        let lastHandHigh = null; // 'left' or 'right'
+        let climbVelocity = 0;
+        let scrollY = 0;
+
+        function resize() {
+            canvas.width = document.getElementById('game-container').clientWidth;
+            canvas.height = document.getElementById('game-container').clientHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        async function initAI() {
+            const status = document.getElementById('loading-status');
+            const urlParams = new URLSearchParams(window.location.search);
+            const isDebug = urlParams.get('debug') === 'true';
+
+            const CDN_SOURCES = [
+                { name: "jsd Mirror", wasm: "https://jsd.cdn.zzko.cn/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "jsDelivr", wasm: "https://fastly.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" }
+            ];
+
+            async function tryLoadAI(index = 0) {
+                const cdn = CDN_SOURCES[index];
+                try {
+                    if (isDebug) status.innerText = `Connecting ${cdn.name}...`;
+                    const vision = await FilesetResolver.forVisionTasks(cdn.wasm);
+                    poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+                            delegate: "GPU"
+                        },
+                        runningMode: "VIDEO",
+                        numPoses: 1
+                    });
+                    return true;
+                } catch (err) {
+                    if (index < CDN_SOURCES.length - 1) return tryLoadAI(index + 1);
+                    throw err;
+                }
+            }
+
+            try {
+                await tryLoadAI();
+                await setupCamera();
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('start-screen').style.display = 'flex';
+            } catch (err) {
+                status.innerText = t.netError;
+                status.style.color = "#ff3b30";
+            }
+        }
+
+        async function setupCamera() {
+            const constraints = { video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } } };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+            return new Promise(r => video.onloadedmetadata = r);
+        }
+
+        window.startGame = function () {
+            gameActive = true;
+            score = 0;
+            timeLeft = GAME_DURATION;
+            document.getElementById('start-screen').style.display = 'none';
+            sfx.init();
+            requestAnimationFrame(gameLoop);
+            const timer = setInterval(() => {
+                if (!gameActive) { clearInterval(timer); return; }
+                timeLeft--;
+                document.getElementById('timer-value').innerText = timeLeft + 's';
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            sfx.playEnd();
+            document.getElementById('game-over-screen').style.display = 'flex';
+            document.getElementById('final-stats-text').innerText = `${t.statsPrefix} ${Math.floor(score)} m`;
+            window.parent.postMessage({ type: 'GAME_OVER', score: Math.floor(score) }, '*');
+        }
+
+        function drawLadder() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const stepH = 120;
+            const ladderW = 280;
+            const offset = scrollY % stepH;
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 15;
+            ctx.lineCap = 'round';
+
+            // Rails
+            const railLeft = (w - ladderW) / 2;
+            const railRight = (w + ladderW) / 2;
+
+            // Draw gradient rails
+            const railGrad = ctx.createLinearGradient(0, 0, 0, h);
+            railGrad.addColorStop(0, 'rgba(100, 100, 100, 0.1)');
+            railGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+            railGrad.addColorStop(1, 'rgba(100, 100, 100, 0.1)');
+            ctx.strokeStyle = railGrad;
+
+            ctx.beginPath();
+            ctx.moveTo(railLeft, 0); ctx.lineTo(railLeft, h);
+            ctx.moveTo(railRight, 0); ctx.lineTo(railRight, h);
+            ctx.stroke();
+
+            // Steps
+            ctx.lineWidth = 8;
+            for (let y = -stepH; y < h + stepH; y += stepH) {
+                const drawY = y + offset;
+                const opacity = 1 - Math.abs(drawY - h / 2) / (h / 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
+                ctx.beginPath();
+                ctx.moveTo(railLeft, drawY);
+                ctx.lineTo(railRight, drawY);
+                ctx.stroke();
+
+                // Grip texture
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.2})`;
+                for (let gx = railLeft + 20; gx < railRight; gx += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, drawY - 5); ctx.lineTo(gx + 10, drawY + 5);
+                    ctx.stroke();
+                }
+                ctx.lineWidth = 8;
+            }
+        }
+
+        function gameLoop(time) {
+            if (!gameActive) return;
+
+            if (poseLandmarker && video.readyState >= 2) {
+                const results = poseLandmarker.detectForVideo(video, time);
+                if (results.landmarks.length > 0) {
+                    const l = results.landmarks[0];
+                    // MediaPipe Pose landmarks: 
+                    // 15/16 Wrists, 11/12 Shoulders, 23/24 Hips
+                    const lw = l[15].y; const rw = l[16].y;
+                    const ls = l[11].y; const rs = l[12].y;
+                    const lh = l[23].y; const rh = l[24].y;
+
+                    const shoulderY = (ls + rs) / 2;
+                    const hipY = (lh + rh) / 2;
+                    const torsoMidY = (shoulderY + hipY) / 2;
+
+                    // Calculate relative position to shoulder
+                    const lRel = lw - ls;
+                    const rRel = rw - rs;
+
+                    // Condition: Higher hand must be above mid-torso to trigger a climb
+                    // This prevents "dead" hands at knees from triggering steps.
+                    const highHandRel = Math.min(lRel, rRel);
+                    const highHandActualY = Math.min(lw, rw);
+
+                    if (highHandActualY < torsoMidY) {
+                        const THRESHOLD = 0.08;
+                        if (lRel < rRel - THRESHOLD && lastHandHigh !== 'left') {
+                            lastHandHigh = 'left';
+                            onClimb();
+                        } else if (rRel < lRel - THRESHOLD && lastHandHigh !== 'right') {
+                            lastHandHigh = 'right';
+                            onClimb();
+                        }
+                    }
+                }
+            }
+
+            // Physics
+            scrollY += climbVelocity;
+            score += climbVelocity / 100; // scaling speed to meters
+            climbVelocity *= 0.95; // friction
+
+            // Update UI
+            document.getElementById('height-value').innerText = Math.floor(score) + ' m';
+            document.getElementById('speed-value').innerText = (climbVelocity * 0.8).toFixed(1) + ' km/h';
+
+            // Draw
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawLadder();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function onClimb() {
+            climbVelocity += 8;
+            if (climbVelocity > 40) climbVelocity = 40;
+            sfx.playClimb();
+
+            // Visual feedback
+            const effect = document.getElementById('climb-effect');
+            effect.style.opacity = '1';
+            setTimeout(() => effect.style.opacity = '0', 100);
+        }
+
+        initAI();
+    </script>
+</body>
+
+</html>

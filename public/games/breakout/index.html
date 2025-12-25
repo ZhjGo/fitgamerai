@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>打砖块</title>
+    <style>
+        :root {
+            --ios-bg: #0c1421;
+            --ios-glass: rgba(255, 255, 255, 0.12);
+            --ios-blur: blur(20px);
+            --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --primary-accent: #007aff;
+            --danger-accent: #ff3b30;
+            --success-accent: #34c759;
+            --warning-accent: #ffcc00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--ios-font);
+            background-color: #000;
+            color: white;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            aspect-ratio: 9/16;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        #bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            filter: brightness(0.6);
+            z-index: 0;
+        }
+
+        canvas {
+            position: relative;
+            z-index: 1;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        #video-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+            height: 75px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--ios-glass);
+            transform: scaleX(-1);
+            opacity: 0.6;
+            z-index: 5;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            padding: 10px 20px;
+            background: var(--ios-glass);
+            backdrop-filter: var(--ios-blur);
+            -webkit-backdrop-filter: var(--ios-blur);
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 16px;
+            z-index: 10;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        #hud-left {
+            left: 20px;
+        }
+
+        #hud-right {
+            right: 130px;
+            /* Avoid video container */
+        }
+
+        #missile-badge {
+            display: none;
+            background: var(--danger-accent);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .btn {
+            background: var(--primary-accent);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: scale(0.92);
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            opacity: 0.8;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <img id="bg-image" src="bg.png" alt="Game Background">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+        </div>
+
+        <div id="hud-left" class="hud">
+            <span id="score-display">🏆 0</span>
+            <span id="level-display">Lv.1</span>
+        </div>
+
+        <div id="hud-right" class="hud">
+            <span id="lives-display">❤️ 3</span>
+            <span id="missile-badge">🚀 READY</span>
+        </div>
+
+        <!-- Screens -->
+        <div id="loading-screen" class="overlay">
+            <div class="spinner"></div>
+            <p id="t-loading">正在初始化 AI...</p>
+            <p id="loading-status" style="font-size: 14px; opacity: 0.6; margin-top: 10px;"></p>
+        </div>
+
+        <div id="start-screen" class="overlay" style="display: none;">
+            <h1 id="t-title">打砖块</h1>
+            <p id="t-instructions">左右移动头部控制挡板 ↔️<br>张大嘴巴发射导弹 🚀 (获得道具后)</p>
+            <button id="t-start-btn" class="btn" onclick="startGame()">开始游戏</button>
+        </div>
+
+        <div id="game-over-screen" class="overlay" style="display: none;">
+            <h1 id="t-game-over">游戏结束</h1>
+            <p id="final-score-text" style="font-size: 24px; font-weight: bold;"></p>
+            <button id="t-restart-btn" class="btn" onclick="location.reload()">再玩一次</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+        // --- I18N ---
+        const translations = {
+            zh: {
+                loading: "正在加载 AI 模型...",
+                title: "打砖块",
+                instructions: "左右移动头部控制挡板 ↔️<br>张大嘴巴发射导弹 🚀 (获得道具后)",
+                start: "开始游戏",
+                gameOver: "游戏结束!",
+                restart: "再玩一次",
+                scorePrefix: "得分: ",
+                netError: "网络连接失败：请检查网络并重试。",
+                cameraError: "摄像头权限不足：请授权后重试。"
+            },
+            en: {
+                loading: "Loading AI Model...",
+                title: "Breakout",
+                instructions: "Move head left/right to move paddle ↔️<br>Open mouth to fire missiles 🚀 (after power-up)",
+                start: "Start Game",
+                gameOver: "Game Over!",
+                restart: "Play Again",
+                scorePrefix: "Score: ",
+                netError: "Network failed. Please check connection.",
+                cameraError: "Camera access denied. Please allow access."
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang') === 'zh' ? 'zh' : 'en';
+        const t = translations[lang];
+
+        function applyTranslations() {
+            document.getElementById('t-loading').innerText = t.loading;
+            document.getElementById('t-title').innerText = t.title;
+            document.getElementById('t-instructions').innerHTML = t.instructions;
+            document.getElementById('t-start-btn').innerText = t.start;
+            document.getElementById('t-game-over').innerText = t.gameOver;
+            document.getElementById('t-restart-btn').innerText = t.restart;
+        }
+        applyTranslations();
+
+        // --- SFX (Web Audio) ---
+        class SoundManager {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            play(freq, type, dur, vol) {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + dur);
+            }
+            playHit() { this.play(400, 'triangle', 0.1, 0.1); }
+            playPaddle() { this.play(300, 'sine', 0.2, 0.1); }
+            playPowerUp() { this.play(800, 'sine', 0.3, 0.2); }
+            playMissile() { this.play(150, 'sawtooth', 0.4, 0.1); }
+            playLose() { this.play(200, 'sawtooth', 0.5, 0.2); }
+        }
+        const sfx = new SoundManager();
+
+        // --- GAME ENGINE ---
+        const APP_WIDTH = 450;
+        const APP_HEIGHT = 800;
+        const BRICK_ROWS = 6;
+        const BRICK_COLS = 8;
+        const BRICK_PADDING = 5;
+        const PADDLE_WIDTH = 100;
+        const PADDLE_HEIGHT = 15;
+        const BALL_RADIUS = 8;
+
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let gameActive = false;
+        let missileAmmo = 0;
+        let missileCooldown = 0;
+        let bricksYOffset = 0;
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const video = document.getElementById('webcam');
+
+        let paddle = { x: APP_WIDTH / 2 - PADDLE_WIDTH / 2, y: APP_HEIGHT - 100, targetX: APP_WIDTH / 2 };
+        let ball = { x: APP_WIDTH / 2, y: APP_HEIGHT / 2, dx: 3, dy: -3, active: false };
+        let bricks = [];
+        let missiles = [];
+        let particles = [];
+        let powerups = [];
+        let faceLandmarker;
+        let mouthOpenThreshold = 0.05; // Gap between lips
+
+        function initBricks() {
+            bricks = [];
+            const brickW = (APP_WIDTH - (BRICK_COLS + 1) * BRICK_PADDING) / BRICK_COLS;
+            const brickH = 25;
+            for (let r = 0; r < BRICK_ROWS; r++) {
+                for (let c = 0; c < BRICK_COLS; c++) {
+                    bricks.push({
+                        x: c * (brickW + BRICK_PADDING) + BRICK_PADDING,
+                        y: r * (brickH + BRICK_PADDING) + 100,
+                        w: brickW,
+                        h: brickH,
+                        active: true,
+                        color: `hsl(${r * 40 + level * 20}, 70%, 60%)`
+                    });
+                }
+            }
+        }
+
+        function resize() {
+            const container = document.getElementById('game-container');
+            const ratio = 9 / 16;
+            let w = container.clientWidth;
+            let h = container.clientHeight;
+            canvas.width = w;
+            canvas.height = h;
+            bricksYOffset = 0;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // AI Init Logic
+        async function initAI() {
+            const status = document.getElementById('loading-status');
+            const isDebug = urlParams.get('debug') === 'true';
+
+            const CDN_SOURCES = [
+                { name: "jsd Mirror", wasm: "https://jsd.cdn.zzko.cn/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
+                { name: "jsDelivr", wasm: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" }
+            ];
+
+            async function load(index = 0) {
+                try {
+                    const cdn = CDN_SOURCES[index];
+                    if (isDebug) status.innerText = `Trying ${cdn.name}...`;
+                    const vision = await FilesetResolver.forVisionTasks(cdn.wasm);
+                    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                        baseOptions: {
+                            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+                            delegate: "GPU"
+                        },
+                        runningMode: "VIDEO",
+                        numFaces: 1
+                    });
+                    return true;
+                } catch (e) {
+                    if (index < CDN_SOURCES.length - 1) return load(index + 1);
+                    throw e;
+                }
+            }
+
+            try {
+                await load();
+                await setupCamera();
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('start-screen').style.display = 'flex';
+            } catch (e) {
+                status.innerText = t.netError;
+                status.style.color = "var(--danger-accent)";
+            }
+        }
+
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } });
+            video.srcObject = stream;
+            return new Promise(r => video.onloadedmetadata = () => { video.play(); r(); });
+        }
+
+        // --- COMPONENTS ---
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.alpha = 1; this.color = color;
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.03; }
+            draw() {
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                const sx = (this.x / APP_WIDTH) * canvas.width;
+                const sy = (this.y / APP_HEIGHT) * canvas.height;
+                ctx.beginPath(); ctx.arc(sx, sy, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class PowerUp {
+            constructor(x, y) { this.x = x; this.y = y; this.type = 'missile'; this.active = true; }
+            update() { this.y += 3; if (this.y > APP_HEIGHT) this.active = false; }
+            draw() {
+                const sx = (this.x / APP_WIDTH) * canvas.width;
+                const sy = (this.y / APP_HEIGHT) * canvas.height;
+                ctx.font = "24px Arial"; ctx.textAlign = 'center'; ctx.fillText("🚀", sx, sy);
+            }
+        }
+
+        class Missile {
+            constructor(x, y) { this.x = x; this.y = y; this.active = true; }
+            update() { this.y -= 10; if (this.y < 0) this.active = false; }
+            draw() {
+                const sx = (this.x / APP_WIDTH) * canvas.width;
+                const sy = (this.y / APP_HEIGHT) * canvas.height;
+                ctx.fillStyle = "#ff3b30";
+                ctx.fillRect(sx - 2, sy - 10, 4, 15);
+                ctx.fillStyle = "#ffcc00";
+                ctx.beginPath(); ctx.moveTo(sx - 4, sy + 5); ctx.lineTo(sx + 4, sy + 5); ctx.lineTo(sx, sy + 15); ctx.fill();
+            }
+        }
+
+        // --- MAIN FUNCTIONS ---
+        window.startGame = () => {
+            sfx.init();
+            document.getElementById('start-screen').style.display = 'none';
+            score = 0; lives = 3; level = 1; missileAmmo = 0; bricksYOffset = 0;
+            initBricks();
+            resetBall();
+            gameActive = true;
+            updateHUD();
+            requestAnimationFrame(loop);
+        };
+
+        function resetBall() {
+            ball.active = false;
+            ball.x = paddle.x + PADDLE_WIDTH / 2;
+            ball.y = paddle.y - BALL_RADIUS - 5;
+            const speed = 6 + (level - 1) * 0.5;
+            ball.dx = speed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = -speed;
+            setTimeout(() => { if (gameActive) ball.active = true; }, 1000);
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').innerText = `🏆 ${score}`;
+            document.getElementById('level-display').innerText = `Lv.${level}`;
+            document.getElementById('lives-display').innerText = `❤️ ${lives}`;
+            const badge = document.getElementById('missile-badge');
+            if (missileAmmo > 0) {
+                badge.style.display = 'block';
+                badge.innerText = `🚀 ${missileAmmo}`;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function loop(timestamp) {
+            if (!gameActive) return;
+
+            // AI Logic
+            if (faceLandmarker && video.readyState >= 2) {
+                const results = faceLandmarker.detectForVideo(video, timestamp);
+                if (results.faceLandmarks.length > 0) {
+                    const landmarks = results.faceLandmarks[0];
+                    // Original: paddle.targetX = (1 - landmarks[4].x) * APP_WIDTH;
+                    // Amplified sensitivity: map center 0.3-0.7 range to 0-1
+                    const rawX = 1 - landmarks[4].x;
+                    const sensitivity = 1.5;
+                    const centeredX = (rawX - 0.5) * sensitivity + 0.5;
+                    paddle.targetX = Math.max(0, Math.min(1, centeredX)) * APP_WIDTH;
+
+                    // Missile firing (Open mouth)
+                    const upperLip = landmarks[13].y;
+                    const lowerLip = landmarks[14].y;
+                    const mouthGap = lowerLip - upperLip;
+                    if (missileAmmo > 0 && mouthGap > 0.04 && missileCooldown <= 0) {
+                        fireMissiles();
+                        missileCooldown = 20;
+                    }
+                }
+            }
+            if (missileCooldown > 0) missileCooldown--;
+
+            // Level mechanics: Bricks descending
+            if (level >= 2) {
+                bricksYOffset += 0.1 * (level - 1);
+            }
+
+            // Physics & Updates
+            paddle.x += (paddle.targetX - (paddle.x + PADDLE_WIDTH / 2)) * 0.4;
+            paddle.x = Math.max(0, Math.min(APP_WIDTH - PADDLE_WIDTH, paddle.x));
+
+            if (ball.active) {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // Wall bounce with position correction
+                if (ball.x < BALL_RADIUS) {
+                    ball.x = BALL_RADIUS;
+                    ball.dx = Math.abs(ball.dx);
+                } else if (ball.x > APP_WIDTH - BALL_RADIUS) {
+                    ball.x = APP_WIDTH - BALL_RADIUS;
+                    ball.dx = -Math.abs(ball.dx);
+                }
+
+                if (ball.y < BALL_RADIUS) {
+                    ball.y = BALL_RADIUS;
+                    ball.dy = Math.abs(ball.dy);
+                }
+
+                // Paddle bounce with position correction
+                if (ball.y + BALL_RADIUS > paddle.y &&
+                    ball.y - BALL_RADIUS < paddle.y + PADDLE_HEIGHT &&
+                    ball.x > paddle.x && ball.x < paddle.x + PADDLE_WIDTH) {
+
+                    // Push ball above paddle
+                    ball.y = paddle.y - BALL_RADIUS;
+                    ball.dy = -Math.abs(ball.dy);
+
+                    const hitPoint = (ball.x - (paddle.x + PADDLE_WIDTH / 2)) / (PADDLE_WIDTH / 2);
+                    ball.dx = hitPoint * 7;
+
+                    // Slightly increase speed
+                    const speedUp = 1.05;
+                    ball.dx *= speedUp;
+                    ball.dy *= speedUp;
+
+                    // Cap max speed
+                    const maxSpeed = 15;
+                    const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                    if (currentSpeed > maxSpeed) {
+                        const ratio = maxSpeed / currentSpeed;
+                        ball.dx *= ratio;
+                        ball.dy *= ratio;
+                    }
+
+                    sfx.playPaddle();
+                }
+
+                // Check bricks bottom limit (Game Over if bricks touch paddle)
+                const activeBricks = bricks.filter(b => b.active);
+                if (activeBricks.length > 0) {
+                    const lowestBrickY = Math.max(...activeBricks.map(b => b.y + bricksYOffset + b.h));
+                    if (lowestBrickY > paddle.y) {
+                        endGame();
+                        return;
+                    }
+                }
+
+                // Lose life
+                if (ball.y > APP_HEIGHT + BALL_RADIUS) {
+                    lives--;
+                    sfx.playLose();
+                    updateHUD();
+                    if (lives <= 0) endGame();
+                    else resetBall();
+                }
+
+                // Brick hit
+                bricks.forEach(b => {
+                    if (!b.active) return;
+                    const bY = b.y + bricksYOffset;
+                    if (ball.x + BALL_RADIUS > b.x && ball.x - BALL_RADIUS < b.x + b.w &&
+                        ball.y + BALL_RADIUS > bY && ball.y - BALL_RADIUS < bY + b.h) {
+                        b.active = false;
+                        ball.dy *= -1;
+                        score += 10;
+                        createParticles(b.x + b.w / 2, bY + b.h / 2, b.color);
+                        sfx.playHit();
+                        if (Math.random() < 0.1) powerups.push(new PowerUp(b.x + b.w / 2, bY + b.h / 2));
+                        updateHUD();
+                    }
+                });
+            } else {
+                ball.x = paddle.x + PADDLE_WIDTH / 2;
+                ball.y = paddle.y - BALL_RADIUS - 5;
+            }
+
+            // Powerups
+            powerups.forEach((p, i) => {
+                p.update();
+                if (p.x > paddle.x && p.x < paddle.x + PADDLE_WIDTH && p.y > paddle.y && p.y < paddle.y + PADDLE_HEIGHT) {
+                    missileAmmo += 50;
+                    p.active = false;
+                    sfx.playPowerUp();
+                    updateHUD();
+                }
+                if (!p.active) powerups.splice(i, 1);
+            });
+
+            // Missiles
+            missiles.forEach((m, i) => {
+                m.update();
+                bricks.forEach(b => {
+                    const bY = b.y + bricksYOffset;
+                    if (b.active && m.x > b.x && m.x < b.x + b.w && m.y > bY && m.y < bY + b.h) {
+                        b.active = false;
+                        m.active = false;
+                        score += 10;
+                        createParticles(b.x + b.w / 2, bY + b.h / 2, b.color);
+                        sfx.playHit();
+                        updateHUD();
+                    }
+                });
+                if (!m.active) missiles.splice(i, 1);
+            });
+
+            particles.forEach((p, i) => { p.update(); if (p.alpha <= 0) particles.splice(i, 1); });
+
+            // Win check
+            if (bricks.every(b => !b.active)) {
+                level++;
+                bricksYOffset = 0;
+                initBricks();
+                resetBall();
+                updateHUD();
+            }
+
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function fireMissiles() {
+            missiles.push(new Missile(paddle.x + 10, paddle.y));
+            missiles.push(new Missile(paddle.x + PADDLE_WIDTH - 10, paddle.y));
+            missileAmmo--;
+            sfx.playMissile();
+            updateHUD();
+        }
+
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) particles.push(new Particle(x, y, color));
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Bricks
+            bricks.forEach(b => {
+                if (!b.active) return;
+                const bY = b.y + bricksYOffset;
+                const sx = (b.x / APP_WIDTH) * canvas.width;
+                const sy = (bY / APP_HEIGHT) * canvas.height;
+                const sw = (b.w / APP_WIDTH) * canvas.width;
+                const sh = (b.h / APP_HEIGHT) * canvas.height;
+
+                ctx.fillStyle = b.color;
+                ctx.shadowBlur = 10; ctx.shadowColor = b.color;
+                roundRect(ctx, sx, sy, sw, sh, 5, true);
+                ctx.shadowBlur = 0;
+            });
+
+            // Draw Paddle
+            const px = (paddle.x / APP_WIDTH) * canvas.width;
+            const py = (paddle.y / APP_HEIGHT) * canvas.height;
+            const pw = (PADDLE_WIDTH / APP_WIDTH) * canvas.width;
+            const ph = (PADDLE_HEIGHT / APP_HEIGHT) * canvas.height;
+            const gradient = ctx.createLinearGradient(px, py, px, py + ph);
+            gradient.addColorStop(0, '#00c6ff'); gradient.addColorStop(1, '#0072ff');
+            ctx.fillStyle = gradient;
+            roundRect(ctx, px, py, pw, ph, 8, true);
+
+            // Draw Ball
+            const bx = (ball.x / APP_WIDTH) * canvas.width;
+            const by = (ball.y / APP_HEIGHT) * canvas.height;
+            const br = (BALL_RADIUS / APP_WIDTH) * canvas.width;
+            ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff"; ctx.fill();
+            ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; ctx.fill(); ctx.shadowBlur = 0;
+
+            // Draw everything else
+            powerups.forEach(p => p.draw());
+            missiles.forEach(m => m.draw());
+            particles.forEach(p => p.draw());
+        }
+
+        function roundRect(ctx, x, y, width, height, radius, fill) {
+            ctx.beginPath(); ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y); ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius); ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height); ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius); ctx.quadraticCurveTo(x, y, x + radius, y); ctx.closePath();
+            if (fill) ctx.fill();
+        }
+
+        function endGame() {
+            gameActive = false;
+            document.getElementById('game-over-screen').style.display = 'flex';
+            document.getElementById('final-score-text').innerText = t.scorePrefix + score;
+            window.parent.postMessage({ type: 'GAME_OVER', score: score }, '*');
+        }
+
+        initAI();
+    </script>
+</body>
+
+</html>
