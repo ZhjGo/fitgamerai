@@ -278,10 +278,9 @@
     </div>
 
     <script type="module">
-        import {
-            PoseLandmarker,
-            FilesetResolver
-        } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+        let FilesetResolver;
+        let PoseLandmarker;
+        let poseLandmarker;
 
         // --- I18N ---
         const translations = {
@@ -399,7 +398,6 @@
         let score = 0; // meters
         let timeLeft = GAME_DURATION;
         let gameActive = false;
-        let poseLandmarker;
         let video = document.getElementById('webcam');
         let canvas = document.getElementById('gameCanvas');
         let ctx = canvas.getContext('2d');
@@ -423,48 +421,114 @@
             const urlParams = new URLSearchParams(window.location.search);
             const isDebug = urlParams.get('debug') === 'true';
 
-            const CDN_SOURCES = [
-                { name: "jsd Mirror", wasm: "https://jsd.cdn.zzko.cn/npm/@mediapipe/tasks-vision@0.10.3/wasm" },
-                { name: "jsDelivr", wasm: "https://fastly.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm" }
-            ];
+            const CDN_CONFIG = {
+                js: ["../lib/mediapipe/0.10.3/vision_bundle.mjs"],
+                wasm: ["../lib/mediapipe/0.10.3"],
+                models: ["../lib/mediapipe/models/pose_landmarker_lite.task"]
+            };
 
-            async function tryLoadAI(index = 0) {
-                const cdn = CDN_SOURCES[index];
+            async function loadModule(index = 0) {
+                const url = CDN_CONFIG.js[index];
                 try {
-                    if (isDebug) status.innerText = `Connecting ${cdn.name}...`;
-                    const vision = await FilesetResolver.forVisionTasks(cdn.wasm);
+                    if (isDebug) status.innerText = `加载核心组件 (${index + 1}/${CDN_CONFIG.js.length})...`;
+                    const module = await import(url);
+                    FilesetResolver = module.FilesetResolver;
+                    PoseLandmarker = module.PoseLandmarker;
+                    return true;
+                } catch (err) {
+                    console.error(`JS加载失败: ${url}`, err);
+                    if (index < CDN_CONFIG.js.length - 1) return loadModule(index + 1);
+                    throw err;
+                }
+            }
+
+            async function tryLoadAI(wasmIndex = 0) {
+                const wasmUrl = CDN_CONFIG.wasm[wasmIndex];
+                try {
+                    if (isDebug) status.innerText = `配置视觉引擎 (${wasmIndex + 1}/${CDN_CONFIG.wasm.length})...`;
+                    const vision = await FilesetResolver.forVisionTasks(wasmUrl);
                     poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-                        baseOptions: {
-                            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
-                            delegate: "GPU"
-                        },
-                        runningMode: "VIDEO",
-                        numPoses: 1
+                        baseOptions: { modelAssetPath: CDN_CONFIG.models[0], delegate: "GPU" },
+                        runningMode: "VIDEO", numPoses: 1
                     });
                     return true;
                 } catch (err) {
-                    if (index < CDN_SOURCES.length - 1) return tryLoadAI(index + 1);
+                    console.error(`引擎初始化失败: ${wasmUrl}`, err);
+                    if (wasmIndex < CDN_CONFIG.wasm.length - 1) return tryLoadAI(wasmIndex + 1);
                     throw err;
                 }
             }
 
             try {
+                await loadModule();
                 await tryLoadAI();
                 await setupCamera();
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('start-screen').style.display = 'flex';
             } catch (err) {
-                status.innerText = t.netError;
-                status.style.color = "#ff3b30";
+                console.error("全系统初始化失败:", err);
+                showError(t.netError, err);
             }
         }
 
         async function setupCamera() {
-            const constraints = { video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } } };
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = stream;
-            return new Promise(r => video.onloadedmetadata = r);
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } } });
+                video.srcObject = stream;
+                return new Promise(r => video.onloadedmetadata = r);
+            } catch (err) {
+                console.error("摄像头启动失败:", err);
+                showError(t.cameraError, err);
+                throw err;
+            }
         }
+
+        function showError(message, err) {
+            const status = document.getElementById('loading-status');
+            const urlParams = new URLSearchParams(window.location.search);
+            const isDebug = urlParams.get('debug') === 'true';
+            status.innerText = message;
+            status.style.color = "#ff3b30";
+
+            if (isDebug) {
+                const debugToggle = document.createElement('div');
+                debugToggle.innerText = "查看详情 ▼";
+                debugToggle.style.fontSize = '12px';
+                debugToggle.style.marginTop = '20px';
+                debugToggle.style.opacity = '0.5';
+                debugToggle.style.cursor = 'pointer';
+
+                const debugInfo = document.createElement('div');
+                debugInfo.style.display = 'none';
+                debugInfo.style.marginTop = '10px';
+
+                const errorDetail = document.createElement('div');
+                errorDetail.style.fontSize = '10px';
+                errorDetail.style.textAlign = 'left';
+                errorDetail.style.maxHeight = '150px';
+                errorDetail.style.overflow = 'auto';
+                errorDetail.style.background = 'rgba(0,0,0,0.5)';
+                errorDetail.style.padding = '8px';
+                errorDetail.style.lineHeight = '1.4';
+
+                let extraGuide = "";
+                if (message.includes("网络") || message.includes("Network")) {
+                    extraGuide = `<div style="color:#ffcc00;margin-bottom:8px;">💡 提示：若直接打开目录看到 403 是正常的（安全限制）。请测试具体文件：<br><a href="${CDN_CONFIG.wasm[0]}/vision_wasm_internal.js" target="_blank" style="color:#007aff">点击测试具体文件加载</a></div>`;
+                }
+
+                errorDetail.innerHTML = extraGuide + `<code>${(err.stack || err.message).replace(/</g, '&lt;')}</code>`;
+
+                debugInfo.appendChild(errorDetail);
+                debugToggle.onclick = () => {
+                    const isHidden = debugInfo.style.display === 'none';
+                    debugInfo.style.display = isHidden ? 'block' : 'none';
+                    debugToggle.innerText = isHidden ? "收起详情 ▲" : "查看详情 ▼";
+                };
+                status.appendChild(debugToggle);
+                status.appendChild(debugInfo);
+            }
+        }
+
 
         window.startGame = function () {
             gameActive = true;

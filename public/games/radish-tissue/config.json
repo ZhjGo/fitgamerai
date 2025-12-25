@@ -1,0 +1,51 @@
+[
+    {
+        "id": "radish-tissue",
+        "en": {
+            "title": "Radish or Tissue?",
+            "description": "Follow the commands: carrot or tissue! Quick reactions and human IQ test.",
+            "thumbnail": "/games/radish-tissue/thumbnail.png",
+            "category": "Casual",
+            "tags": [
+                "Hand",
+                "Motion",
+                "Reaction",
+                "AI"
+            ],
+            "seo": {
+                "title": "Radish or Tissue? - AI Human IQ Test",
+                "description": "Challenge your brain with this magic radish or tissue game using AI hand tracking.",
+                "keywords": [
+                    "radish tissue",
+                    "iq test",
+                    "hand tracking",
+                    "reaction game",
+                    "webcam game"
+                ]
+            }
+        },
+        "zh": {
+            "title": "萝卜纸巾大挑战",
+            "description": "听指令：萝卜还是纸巾？魔性语音，挑战你的反应极限！",
+            "thumbnail": "/games/radish-tissue/thumbnail.png",
+            "category": "休闲",
+            "tags": [
+                "手部交互",
+                "动作感应",
+                "反应力",
+                "AI"
+            ],
+            "seo": {
+                "title": "萝卜纸巾大挑战 - AI 人类智力检测",
+                "description": "听魔性指令举起萝卜或纸巾，挑战反应速度。基于 AI 手势识别的趣味交互游戏。",
+                "keywords": [
+                    "萝卜纸巾",
+                    "人类智力检测",
+                    "手势识别",
+                    "反应游戏",
+                    "体感游戏"
+                ]
+            }
+        }
+    }
+]

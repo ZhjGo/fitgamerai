@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>萝卜纸巾大挑战 (Radish or Tissue?)</title>
+    <style>
+        :root {
+            --ios-bg: #f2f2f7;
+            --ios-glass: rgba(255, 255, 255, 0.75);
+            --ios-blur: blur(20px);
+            --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --primary-accent: #ff9500;
+            --secondary-accent: #007aff;
+            --success: #34c759;
+            --danger: #ff3b30;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--ios-font);
+            background: #000 url('bg.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #ffffff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            /* 窄屏更适合竖屏游戏 */
+            aspect-ratio: 9/16;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 视频容器，放在最底层 */
+        #video-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 110px;
+            height: 147px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid var(--ios-glass);
+            transform: scaleX(-1);
+            z-index: 5;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Canvas 层，必须在高 z-index 确保可见 */
+        canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            /* 确保在视频和 HUD 之间或上方 */
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 游戏物品区 */
+        .target-area {
+            position: absolute;
+            bottom: 12%;
+            width: 130px;
+            height: 130px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--ios-glass);
+            backdrop-filter: var(--ios-blur);
+            -webkit-backdrop-filter: var(--ios-blur);
+            border-radius: 35px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            z-index: 8;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #area-radish {
+            left: 20px;
+        }
+
+        #area-tissue {
+            right: 20px;
+        }
+
+        .emoji {
+            font-size: 65px;
+            margin-bottom: 5px;
+        }
+
+        .label {
+            font-size: 15px;
+            font-weight: 800;
+            color: #3a3a3c;
+            letter-spacing: 1px;
+        }
+
+        .active-target {
+            transform: scale(1.15);
+            border: 4px solid var(--primary-accent);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        /* HUD */
+        .hud {
+            position: absolute;
+            top: 25px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 30;
+        }
+
+        .hud-item {
+            background: var(--ios-glass);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 18px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            color: #1c1c1e;
+        }
+
+        /* 指令 */
+        #command-display {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            text-align: center;
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        #command-text {
+            font-size: 85px;
+            font-weight: 1000;
+            color: white;
+            text-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        #command-timer {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--danger);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 20px;
+            border-radius: 15px;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            70% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* 屏障与加载 */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            /* 加深遮罩，确保文字清晰 */
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 40px;
+            color: white;
+            /* 确保所有文字默认为白色 */
+        }
+
+        #game-over-screen h1 {
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #final-stats {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #FFD60A;
+            /* iOS 亮黄色，极其醒目 */
+            text-shadow: 0 0 15px rgba(255, 214, 10, 0.5);
+        }
+
+        .btn {
+            background: var(--secondary-accent);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            border-radius: 35px;
+            font-size: 24px;
+            font-weight: 900;
+            box-shadow: 0 15px 35px rgba(0, 122, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.92);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            border-top: 5px solid var(--secondary-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <div class="hud">
+            <div id="score-display" class="hud-item">IQ: 0</div>
+            <div id="time-display" class="hud-item">60s</div>
+        </div>
+
+        <div id="area-radish" class="target-area">
+            <span class="emoji">🥕</span>
+            <span class="label">萝卜</span>
+        </div>
+        <div id="area-tissue" class="target-area">
+            <span class="emoji">🧻</span>
+            <span class="label">纸巾</span>
+        </div>
+
+        <div id="command-display">
+            <div id="command-text">萝卜！</div>
+            <div id="command-timer">3s</div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+        </div>
+
+        <div id="loading-screen" class="overlay">
+            <div class="spinner"></div>
+            <p style="margin-top:25px; font-weight:700; font-size:20px">正在觉醒智力检测器...</p>
+            <p id="loading-status" style="font-size: 13px; opacity:0.6; margin-top:12px;"></p>
+        </div>
+
+        <div id="start-screen" class="overlay" style="display: none;">
+            <h1 style="font-size:42px; margin-bottom:25px">萝卜纸巾大挑战</h1>
+            <p style="font-size:19px; line-height:1.7; margin-bottom:40px">
+                请举起你的<strong>手掌 (Palm)</strong><br>
+                在屏幕中操控<strong>猫爪</strong>触碰物品！<br>
+                要在 <strong>3 秒内</strong> 做出选择哦！
+            </p>
+            <button class="btn" onclick="startGame()">开始检测</button>
+        </div>
+
+        <div id="game-over-screen" class="overlay" style="display: none;">
+            <h1 style="font-size:40px">检测结果</h1>
+            <p id="final-stats" style="font-size:28px; font-weight:1000; margin:30px 0"></p>
+            <button class="btn" onclick="location.reload()">不服重测</button>
+        </div>
+    </div>
+
+    <script type="module">
+        let FilesetResolver, HandLandmarker, handLandmarker;
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- I18N ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang') === 'zh' ? 'zh' : 'en';
+        const t = {
+            zh: { radish: "萝卜", tissue: "纸巾", iq: "智力", netError: "网络不稳，请刷新" },
+            en: { radish: "Radish", tissue: "Tissue", iq: "IQ", netError: "Network Error" }
+        }[lang];
+
+        // --- 1€ Filter (维持流畅的核心) ---
+        class OneEuroFilter {
+            constructor(minCutoff = 1.0, beta = 0.05) {
+                this.minCutoff = minCutoff; this.beta = beta;
+                this.x = 0; this.dx = 0; this.lastTime = null;
+            }
+            alpha(cutoff, dt) { let tau = 1.0 / (2 * Math.PI * cutoff); return 1.0 / (1.0 + tau / dt); }
+            filter(value, timestamp) {
+                if (this.lastTime === null) { this.lastTime = timestamp; this.x = value; return value; }
+                const dt = (timestamp - this.lastTime) / 1000.0; this.lastTime = timestamp;
+                const dval = (value - this.x) / dt;
+                const dalpha = this.alpha(1.0, dt);
+                this.dx = dalpha * dval + (1 - dalpha) * this.dx;
+                const cutoff = this.minCutoff + this.beta * Math.abs(this.dx);
+                const alpha = this.alpha(cutoff, dt);
+                this.x = alpha * value + (1 - alpha) * this.x;
+                return this.x;
+            }
+        }
+        const filters = { x: new OneEuroFilter(2.0, 0.02), y: new OneEuroFilter(2.0, 0.02) };
+
+        // --- GAME STATE ---
+        let score = 0, timeLeft = 60, gameActive = false, currentCommand = null, canInteract = false;
+        let lastHandX = 0.5, velocityHistory = [];
+        let commandTimerInterval = null; // 用于存储指令倒计时的 setInterval ID
+        let commandTimeout = null; // 用于存储指令超时的 setTimeout ID
+
+        // --- AUDIO ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function speak(text, mode = 'normal') {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
+            if (mode === 'magic') { utter.pitch = 2.0; utter.rate = 1.6; }
+            else if (mode === 'low') { utter.pitch = 0.5; utter.rate = 1.0; }
+            else { utter.pitch = 1.0; utter.rate = 1.3; }
+            window.speechSynthesis.speak(utter);
+        }
+
+        // --- RENDERER (核心猫爪逻辑) ---
+        function drawCatPaw(landmarks) {
+            if (!landmarks) return;
+            const w = canvas.width, h = canvas.height;
+
+            // 计算平滑后的核心点（手心中心）
+            const wrist = landmarks[0];
+            const rawX = 1 - wrist.x; // 镜像处理
+            const sx = filters.x.filter(rawX * w, performance.now());
+            const sy = filters.y.filter(wrist.y * h, performance.now());
+
+            ctx.save();
+            ctx.shadowBlur = 20; ctx.shadowColor = "rgba(255,255,255,0.9)";
+
+            // 1. 绘制手心主肉垫
+            const palmX = (1 - (landmarks[0].x + landmarks[5].x + landmarks[17].x) / 3) * w;
+            const palmY = (landmarks[0].y + landmarks[5].y + landmarks[17].y) / 3 * h;
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+            ctx.beginPath();
+            ctx.ellipse(palmX, palmY, 25, 30, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. 绘制五根手指肉爪 (固定布局拟态肉垫)
+            const offsets = [
+                { dx: -35, dy: -25, r: 12 }, // 大拇指
+                { dx: -18, dy: -45, r: 13 }, // 食指 (判定点位置以此为准)
+                { dx: 5, dy: -52, r: 14 }, // 中指
+                { dx: 28, dy: -42, r: 13 }, // 无名指
+                { dx: 45, dy: -15, r: 11 }  // 小指
+            ];
+
+            offsets.forEach(off => {
+                const px = palmX + off.dx * 0.8;
+                const py = palmY + off.dy * 0.8;
+
+                ctx.beginPath();
+                ctx.fillStyle = "#FFB7B7";
+                ctx.arc(px, py, off.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.strokeStyle = "rgba(255,255,255,0.9)";
+                ctx.lineWidth = 2;
+                ctx.arc(px, py, off.r, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            // 返回视觉上“食指”所在的位置 (相对于屏幕 0-1) 用于逻辑判定
+            const visualIndexX = (palmX + offsets[1].dx * 0.8) / w;
+            const visualIndexY = (palmY + offsets[1].dy * 0.8) / h;
+            return { x: visualIndexX, y: visualIndexY };
+        }
+
+        // --- AI INITIALIZER ---
+        async function initAI() {
+            const status = document.getElementById('loading-status');
+            const LOCAL_RES = {
+                js: "../lib/mediapipe/0.10.3/vision_bundle.mjs",
+                wasm: "../lib/mediapipe/0.10.3",
+                model: "../lib/mediapipe/models/hand_landmarker.task"
+            };
+
+            try {
+                const module = await import(LOCAL_RES.js);
+                FilesetResolver = module.FilesetResolver; HandLandmarker = module.HandLandmarker;
+                const vision = await FilesetResolver.forVisionTasks(LOCAL_RES.wasm);
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: LOCAL_RES.model, delegate: "GPU" },
+                    runningMode: "VIDEO", numHands: 1
+                });
+
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } } });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('start-screen').style.display = 'flex';
+                    requestAnimationFrame(gameLoop);
+                };
+            } catch (e) { status.innerText = t.netError; }
+        }
+
+        window.startGame = () => {
+            gameActive = true; score = 0; timeLeft = 60;
+            document.getElementById('start-screen').style.display = 'none';
+            nextCommand();
+            const timer = setInterval(() => {
+                if (!gameActive) { clearInterval(timer); return; }
+                timeLeft--; document.getElementById('time-display').innerText = timeLeft + 's';
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        };
+
+        function nextCommand() {
+            if (!gameActive) return;
+            const choices = ['radish', 'tissue'];
+            const roll = choices[Math.floor(Math.random() * choices.length)];
+
+            const el = document.getElementById('command-text');
+            const timerEl = document.getElementById('command-timer');
+            const radishArea = document.getElementById('area-radish');
+            const tissueArea = document.getElementById('area-tissue');
+
+            el.style.display = 'none';
+            timerEl.style.display = 'none';
+
+            // 简单的左右对调位置，不再完全随机移动
+            const container = document.getElementById('game-container');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+
+            const isSwapped = Math.random() > 0.5;
+            const leftX = 40;
+            const rightX = cw - 130 - 40;
+            const fixedY = ch - 130 - 40; // 离底部固定距离
+
+            radishArea.style.left = `${isSwapped ? rightX : leftX}px`;
+            radishArea.style.top = `${fixedY}px`;
+            radishArea.style.bottom = 'auto';
+
+            tissueArea.style.left = `${isSwapped ? leftX : rightX}px`;
+            tissueArea.style.top = `${fixedY}px`;
+            tissueArea.style.bottom = 'auto';
+
+            currentCommand = roll;
+            canInteract = true;
+            el.innerText = (roll === 'radish' ? "🥕 " : "🧻 ") + (roll === 'radish' ? t.radish : t.tissue) + "！";
+            el.style.display = 'block';
+            el.style.color = roll === 'radish' ? '#ff9500' : '#ffffff';
+
+            // 语音出题
+            speak(roll === 'radish' ? t.radish : t.tissue);
+
+            // 启动 3 秒限时
+            let count = 3;
+            timerEl.innerText = count + "s";
+            timerEl.style.display = 'inline-block';
+
+            if (commandTimerInterval) clearInterval(commandTimerInterval);
+            if (commandTimeout) clearTimeout(commandTimeout);
+
+            commandTimerInterval = setInterval(() => {
+                count--;
+                timerEl.innerText = (count >= 0 ? count : 0) + "s";
+                if (count <= 0) clearInterval(commandTimerInterval);
+            }, 1000);
+
+            commandTimeout = setTimeout(() => {
+                if (canInteract && currentCommand === roll) {
+                    handleResult(false); // 超时未答
+                }
+            }, 3000);
+        }
+
+        function handleResult(correct) {
+            if (!gameActive) return;
+            canInteract = false;
+
+            // 清理计时器
+            if (commandTimerInterval) clearInterval(commandTimerInterval);
+            if (commandTimeout) clearTimeout(commandTimeout);
+            document.getElementById('command-timer').style.display = 'none';
+
+            if (correct) {
+                score += 10; speak(lang === 'zh' ? "真——棒！" : "Awesome!", "magic");
+            } else {
+                score = Math.max(0, score - 5); speak(lang === 'zh' ? "错了！" : "Oops!", "low");
+            }
+            document.getElementById('score-display').innerText = `IQ: ${score}`;
+
+            // 稍作延迟进入下一题
+            setTimeout(() => {
+                if (gameActive) nextCommand();
+            }, 800);
+        }
+
+        function endGame() {
+            gameActive = false;
+            document.getElementById('game-over-screen').style.display = 'flex';
+            document.getElementById('final-stats').innerText = `IQ Level: ${score}`;
+            window.parent.postMessage({ type: 'GAME_OVER', score: score }, '*');
+        }
+
+        function isPointInRect(px, py, rect) {
+            return px >= rect.left && px <= rect.right && py >= rect.top && py <= rect.bottom;
+        }
+
+        function gameLoop(time) {
+            // 响应式画布同步
+            if (canvas.width !== canvas.clientWidth) { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (handLandmarker && video.readyState >= 2) {
+                const results = handLandmarker.detectForVideo(video, time);
+                if (results.landmarks && results.landmarks[0]) {
+                    const tipData = drawCatPaw(results.landmarks[0]);
+
+                    if (gameActive && canInteract) {
+                        const containerRect = document.getElementById('game-container').getBoundingClientRect();
+                        const hx = containerRect.left + tipData.x * containerRect.width;
+                        const hy = containerRect.top + tipData.y * containerRect.height;
+
+                        const rArea = document.getElementById('area-radish');
+                        const tArea = document.getElementById('area-tissue');
+                        const rRect = rArea.getBoundingClientRect();
+                        const tRect = tArea.getBoundingClientRect();
+
+                        // 使用更严谨的碰撞检测
+                        if (isPointInRect(hx, hy, rRect)) {
+                            handleResult(currentCommand === 'radish');
+                        } else if (isPointInRect(hx, hy, tRect)) {
+                            handleResult(currentCommand === 'tissue');
+                        }
+                    }
+                }
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        initAI();
+    </script>
+</body>
+
+</html>

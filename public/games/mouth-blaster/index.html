@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mouth Blaster V2 - Hand & Face AI</title>
+    <style>
+        :root {
+            --ios-bg: #0c1421;
+            --ios-glass: rgba(255, 255, 255, 0.12);
+            --ios-blur: blur(20px);
+            --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --primary-accent: #007aff;
+            --laser-color: #ff2d55;
+            --powerup-color: #ffcc00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--ios-font);
+            background-color: #000;
+            color: white;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            aspect-ratio: 9/16;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        #bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            filter: brightness(0.4) blur(1px);
+            z-index: 0;
+        }
+
+        canvas {
+            position: relative;
+            z-index: 1;
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        #video-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 100px;
+            height: 140px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--ios-glass);
+            transform: scaleX(-1);
+            opacity: 0.8;
+            z-index: 5;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hud {
+            position: absolute;
+            padding: 10px 20px;
+            background: var(--ios-glass);
+            backdrop-filter: var(--ios-blur);
+            -webkit-backdrop-filter: var(--ios-blur);
+            border-radius: 18px;
+            font-weight: 700;
+            font-size: 18px;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hud-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            opacity: 0.6;
+            display: block;
+        }
+
+        #score-display {
+            top: 20px;
+            left: 20px;
+        }
+
+        #timer-display {
+            top: 20px;
+            right: 20px;
+        }
+
+        #laser-level-display {
+            top: 85px;
+            left: 20px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 204, 0, 0.15);
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            color: var(--powerup-color);
+            min-width: 100px;
+        }
+
+        .level-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .dot.active {
+            background: var(--powerup-color);
+            box-shadow: 0 0 10px var(--powerup-color);
+            transform: scale(1.1);
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .btn {
+            background: var(--primary-accent);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 30px;
+            box-shadow: 0 8px 16px rgba(0, 122, 255, 0.3);
+        }
+
+        h1 {
+            font-size: 44px;
+            background: linear-gradient(180deg, #fff 0%, #007aff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            font-weight: 900;
+        }
+
+        #loading-screen p {
+            margin-top: 15px;
+            opacity: 0.7;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid var(--primary-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #hand-status {
+            position: absolute;
+            bottom: 170px;
+            right: 20px;
+            width: 100px;
+            padding: 6px 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(52, 199, 89, 0.4);
+            border-radius: 12px;
+            color: #34c759;
+            font-size: 11px;
+            text-align: center;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <img id="bg-image" src="bg.png">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+        </div>
+
+        <div id="hand-status">手势就绪</div>
+
+        <div id="score-display" class="hud">
+            <span class="hud-label" id="l-score">得分</span>
+            <span id="score-value">0</span>
+        </div>
+        <div id="timer-display" class="hud">
+            <span class="hud-label" id="l-time">时间</span>
+            <span id="timer-value">60s</span>
+        </div>
+        <div id="laser-level-display" class="hud" style="display:none;">
+            <span class="hud-label">POWER</span>
+            <div class="level-dots">
+                <div class="dot" id="dot-1"></div>
+                <div class="dot" id="dot-2"></div>
+                <div class="dot" id="dot-3"></div>
+            </div>
+        </div>
+
+        <!-- Screens -->
+        <div id="loading-screen" class="overlay">
+            <div class="spinner"></div>
+            <p id="t-loading">正在激活双模型同步器...</p>
+            <p id="loading-status" style="font-size: 12px; opacity: 0.5;"></p>
+        </div>
+
+        <div id="start-screen" class="overlay" style="display: none;">
+            <h1 id="t-title">星际原力</h1>
+            <p id="t-instructions">1. 左右移动头部控制**战机** 🛸<br>2. 右手**握拳再张开**发射**激光** ✊✋<br>3. 收集掉落核心升级**多重激光** 💎</p>
+            <button class="btn" onclick="startGame()">开始战斗</button>
+        </div>
+
+        <div id="game-over-screen" class="overlay" style="display: none;">
+            <h1 id="t-game-over">战斗结束</h1>
+            <p id="final-score" style="font-size: 32px; font-weight: 800;"></p>
+            <button class="btn" onclick="location.reload()">再战一回</button>
+        </div>
+    </div>
+
+    <script type="module">
+        let FilesetResolver;
+        let FaceLandmarker;
+        let HandLandmarker;
+        let faceLM;
+        let handLM;
+        let video = document.getElementById('webcam');
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+
+        const translations = {
+            zh: {
+                loading: "正在激活双模型同步器...",
+                title: "星际原力",
+                instructions: "1. 左右移动头部控制**战机** 🛸<br>2. 右手**握拳再张开**发射**激光** ✊✋<br>3. 收集掉落核心升级**多重激光** 💎",
+                gameOver: "战斗结束",
+                statsPrefix: "消灭数量: ", score: "得分", time: "时间"
+            },
+            en: {
+                loading: "Activating Dual-Model Sync...",
+                title: "Star Force",
+                instructions: "1. Move head to **Pilot Ship** 🛸<br>2. Right hand **Clench & Open** to **Fire** ✊✋<br>3. Collect cores for **Multi-Shot** 💎",
+                gameOver: "Mission Over",
+                statsPrefix: "Aliens Killed: ", score: "Score", time: "Time"
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang') === 'zh' ? 'zh' : 'en';
+        const t = translations[lang];
+
+        document.getElementById('t-loading').innerText = t.loading;
+        document.getElementById('t-title').innerText = t.title;
+        document.getElementById('t-instructions').innerHTML = t.instructions;
+
+        // --- SFX ---
+        class SoundManager {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            playLaser() {
+                this.init(); const n = this.ctx.currentTime;
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                o.type = 'sawtooth'; o.frequency.setValueAtTime(800, n);
+                o.frequency.exponentialRampToValueAtTime(100, n + 0.1);
+                g.gain.setValueAtTime(0.05, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.1);
+                o.connect(g); g.connect(this.ctx.destination);
+                o.start(); o.stop(n + 0.1);
+            }
+            playExplosion() {
+                this.init(); const n = this.ctx.currentTime;
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                o.type = 'square'; o.frequency.setValueAtTime(120, n);
+                o.frequency.exponentialRampToValueAtTime(10, n + 0.3);
+                g.gain.setValueAtTime(0.1, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.3);
+                o.connect(g); g.connect(this.ctx.destination);
+                o.start(); o.stop(n + 0.3);
+            }
+            playPowerup() {
+                this.init(); const n = this.ctx.currentTime;
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                o.type = 'sine'; o.frequency.setValueAtTime(200, n);
+                o.frequency.linearRampToValueAtTime(800, n + 0.2);
+                g.gain.setValueAtTime(0.1, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.2);
+                o.connect(g); g.connect(this.ctx.destination);
+                o.start(); o.stop(n + 0.2);
+            }
+        }
+        const sfx = new SoundManager();
+
+        // --- GAME ENGINE ---
+        // --- GAME CONSTANTS ---
+        const GAME_DURATION = 60;
+        let aliens = [];
+        let lasers = [];
+        let bullets = [];
+        let coreDrops = [];
+        let powerups = [];
+        let score = 0;
+        let timeLeft = GAME_DURATION;
+        let gameActive = false;
+        let laserLevel = 1;
+        let shipX = 300;
+        let shipY = 400;
+        let lastHeadX = 0.5;
+        let lastMouthOpen = false;
+        let lastHandOpen = true;
+        let lastLaserTime = 0;
+        let combo = 0;
+        let comboTimer = 0;
+        let isClenched = false; // 新逻辑需保留的变量
+
+        class Bullet {
+            constructor(x, y, angle = 0) { this.x = x; this.y = y; this.speed = 12; this.angle = angle; }
+            update() {
+                this.y -= this.speed;
+                this.x += Math.sin(this.angle) * this.speed;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = laserLevel > 1 ? '#007aff' : '#ff2d55';
+                ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
+                ctx.fillRect(-2, 0, 4, 20);
+                ctx.restore();
+            }
+        }
+
+        const ALIEN_TYPES = [
+            { // Squid-like Invader
+                draw: (ctx, x, y, frame) => {
+                    const s = 2; // Even smaller
+                    const anim = frame % 40 < 20 ? 0 : 1;
+                    ctx.fillRect(x - 2 * s, y - 3 * s, 4 * s, s);
+                    ctx.fillRect(x - 4 * s, y - 2 * s, 8 * s, s);
+                    ctx.fillRect(x - 5 * s, y - s, 10 * s, s);
+                    ctx.clearRect(x - 3 * s, y - s, s, s); ctx.clearRect(x + 2 * s, y - s, s, s);
+                    if (anim === 0) {
+                        ctx.fillRect(x - 5 * s, y, s, 2 * s); ctx.fillRect(x - 2 * s, y, s, 2 * s);
+                        ctx.fillRect(x + s, y, s, 2 * s); ctx.fillRect(x + 4 * s, y, s, 2 * s);
+                    } else {
+                        ctx.fillRect(x - 4 * s, y, s, 2 * s); ctx.fillRect(x - s, y, s, 2 * s);
+                        ctx.fillRect(x + 3 * s, y, s, 2 * s);
+                    }
+                }
+            },
+            { // Crab-like Invader
+                draw: (ctx, x, y, frame) => {
+                    const s = 2;
+                    const anim = frame % 40 < 20 ? 0 : 1;
+                    ctx.fillRect(x - 3 * s, y - 3 * s, 6 * s, s);
+                    ctx.fillRect(x - 5 * s, y - 2 * s, 10 * s, s);
+                    ctx.fillRect(x - 6 * s, y - s, 12 * s, s);
+                    ctx.clearRect(x - 4 * s, y - s, s, s); ctx.clearRect(x + 3 * s, y - s, s, s);
+                    if (anim === 0) {
+                        ctx.fillRect(x - 6 * s, y, 2 * s, s); ctx.fillRect(x + 4 * s, y, 2 * s, s);
+                        ctx.fillRect(x - 4 * s, y + s, s, s); ctx.fillRect(x + 3 * s, y + s, s, s);
+                    } else {
+                        ctx.fillRect(x - 3 * s, y, s, s); ctx.fillRect(x + 2 * s, y, s, s);
+                        ctx.fillRect(x - 5 * s, y + s, s, s); ctx.fillRect(x + 4 * s, y + s, s, s);
+                    }
+                }
+            },
+            { // Octopus-like Invader
+                draw: (ctx, x, y, frame) => {
+                    const s = 2;
+                    const anim = frame % 40 < 20 ? 0 : 1;
+                    ctx.fillRect(x - s, y - 4 * s, 2 * s, s);
+                    ctx.fillRect(x - 2 * s, y - 3 * s, 4 * s, s);
+                    ctx.fillRect(x - 4 * s, y - 2 * s, 8 * s, s);
+                    ctx.fillRect(x - 5 * s, y - s, 4 * s, s); ctx.fillRect(x + s, y - s, 4 * s, s);
+                    ctx.fillRect(x - 6 * s, y, 12 * s, s);
+                    ctx.clearRect(x - 3 * s, y, s, s); ctx.clearRect(x + 2 * s, y, s, s);
+                    if (anim === 0) {
+                        ctx.fillRect(x - 4 * s, y + s, s, s); ctx.fillRect(x + 3 * s, y + s, s, s);
+                    } else {
+                        ctx.fillRect(x - 2 * s, y + s, s, s); ctx.fillRect(x + s, y + s, s, s);
+                    }
+                }
+            }
+        ];
+
+        class Alien {
+            constructor() {
+                this.type = Math.floor(Math.random() * ALIEN_TYPES.length);
+                this.x = Math.random() * (canvas.width - 60) + 30;
+                this.y = -50; this.speed = 1.2 + (score / 1000);
+                this.size = 25; this.color = `hsl(${200 + Math.random() * 100}, 80%, 60%)`;
+                this.frame = Math.random() * 100;
+            }
+            update() { this.y += this.speed; this.frame++; }
+            draw() {
+                ctx.fillStyle = this.color; ctx.shadowBlur = 15; ctx.shadowColor = this.color;
+                ALIEN_TYPES[this.type].draw(ctx, this.x, this.y, this.frame);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class PowerUp {
+            constructor(x, y) { this.x = x; this.y = y; this.speed = 2.5; this.size = 10; }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.fillStyle = '#ffcc00'; ctx.shadowBlur = 10; ctx.shadowColor = '#ffcc00';
+                const s = 3; // Pixel size for diamond
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - 2 * s);
+                ctx.lineTo(this.x + 2 * s, this.y);
+                ctx.lineTo(this.x, this.y + 2 * s);
+                ctx.lineTo(this.x - 2 * s, this.y);
+                ctx.closePath(); ctx.fill();
+                // Core highlight
+                ctx.fillStyle = '#fff'; ctx.fillRect(this.x - s / 2, this.y - s / 2, s, s);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        async function initAI() {
+            const status = document.getElementById('loading-status');
+            const isDebug = urlParams.get('debug') === 'true';
+
+            const CDN_CONFIG = {
+                js: ["../lib/mediapipe/0.10.3/vision_bundle.mjs"],
+                wasm: ["../lib/mediapipe/0.10.3"],
+                faceModel: ["../lib/mediapipe/models/face_landmarker.task"],
+                handModel: ["../lib/mediapipe/models/hand_landmarker.task"]
+            };
+
+            async function loadModule(index = 0) {
+                const url = CDN_CONFIG.js[index];
+                try {
+                    if (isDebug) status.innerText = `加载核心组件 (${index + 1}/${CDN_CONFIG.js.length})...`;
+                    // 动态加载 ES 模块
+                    const module = await import(url);
+                    FilesetResolver = module.FilesetResolver;
+                    FaceLandmarker = module.FaceLandmarker;
+                    HandLandmarker = module.HandLandmarker;
+                    return true;
+                } catch (err) {
+                    console.error(`JS组件加载失败: ${url}`, err);
+                    if (index < CDN_CONFIG.js.length - 1) return loadModule(index + 1);
+                    throw err;
+                }
+            }
+
+            async function tryLoadAI(wasmIndex = 0, fModelIdx = 0, hModelIdx = 0) {
+                const wasmUrl = CDN_CONFIG.wasm[wasmIndex];
+                try {
+                    if (isDebug) status.innerText = `配置视觉引擎 (${wasmIndex + 1}/${CDN_CONFIG.wasm.length})...`;
+                    const vision = await FilesetResolver.forVisionTasks(wasmUrl);
+
+                    faceLM = await FaceLandmarker.createFromOptions(vision, {
+                        baseOptions: { modelAssetPath: CDN_CONFIG.faceModel[fModelIdx], delegate: "GPU" },
+                        runningMode: "VIDEO", numFaces: 1
+                    });
+                    handLM = await HandLandmarker.createFromOptions(vision, {
+                        baseOptions: { modelAssetPath: CDN_CONFIG.handModel[hModelIdx], delegate: "GPU" },
+                        runningMode: "VIDEO", numHands: 1
+                    });
+                    return true;
+                } catch (err) {
+                    console.error(`视觉引擎初始化失败: ${wasmUrl}`, err);
+                    if (wasmIndex < CDN_CONFIG.wasm.length - 1) return tryLoadAI(wasmIndex + 1, fModelIdx, hModelIdx);
+                    if (fModelIdx < CDN_CONFIG.faceModel.length - 1) return tryLoadAI(0, fModelIdx + 1, hModelIdx);
+                    throw err;
+                }
+            }
+
+            try {
+                await loadModule();
+                await tryLoadAI();
+                await setupCamera();
+                video.play();
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('start-screen').style.display = 'flex';
+            } catch (err) {
+                console.error("全系统初始化失败:", err);
+                showError(t.netError, err);
+            }
+        } async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } } });
+                video.srcObject = stream;
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => resolve();
+                });
+            } catch (err) {
+                console.error("摄像头启动失败:", err);
+                showError(t.cameraError, err);
+                throw err;
+            }
+        }
+        function showError(message, err) {
+            const status = document.getElementById('loading-status');
+            const urlParams = new URLSearchParams(window.location.search);
+            const isDebug = urlParams.get('debug') === 'true';
+            status.innerText = message;
+            status.style.color = "#ff3b30";
+
+            if (isDebug) {
+                const debugToggle = document.createElement('div');
+                debugToggle.innerText = "查看详情 ▼";
+                debugToggle.style.fontSize = '12px';
+                debugToggle.style.marginTop = '20px';
+                debugToggle.style.opacity = '0.5';
+                debugToggle.style.cursor = 'pointer';
+
+                const debugInfo = document.createElement('div');
+                debugInfo.style.display = 'none';
+                debugInfo.style.marginTop = '10px';
+
+                const errorDetail = document.createElement('div');
+                errorDetail.style.fontSize = '10px';
+                errorDetail.style.textAlign = 'left';
+                errorDetail.style.maxHeight = '150px';
+                errorDetail.style.overflow = 'auto';
+                errorDetail.style.background = 'rgba(0,0,0,0.5)';
+                errorDetail.style.padding = '8px';
+                errorDetail.style.lineHeight = '1.4';
+
+                let extraGuide = "";
+                if (message.includes("网络") || message.includes("Network")) {
+                    extraGuide = `<div style="color:#ffcc00;margin-bottom:8px;">💡 提示：若直接打开目录看到 403 是正常的（安全限制）。请测试具体文件：<br><a href="${CDN_CONFIG.wasm[0]}/vision_wasm_internal.js" target="_blank" style="color:#007aff">点击测试具体文件加载</a></div>`;
+                }
+
+                errorDetail.innerHTML = extraGuide + `<code>${(err.stack || err.message).replace(/</g, '&lt;')}</code>`;
+
+                debugInfo.appendChild(errorDetail);
+                debugToggle.onclick = () => {
+                    const isHidden = debugInfo.style.display === 'none';
+                    debugInfo.style.display = isHidden ? 'block' : 'none';
+                    debugToggle.innerText = isHidden ? "收起详情 ▲" : "查看详情 ▼";
+                };
+                status.appendChild(debugToggle);
+                status.appendChild(debugInfo);
+            }
+        }
+
+        window.startGame = function () {
+            gameActive = true; score = 0; timeLeft = 60; laserLevel = 1;
+            bullets = []; aliens = []; powerups = [];
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('laser-level-display').style.display = 'none';
+            sfx.init(); requestAnimationFrame(render);
+            const timer = setInterval(() => {
+                if (!gameActive) { clearInterval(timer); return; }
+                timeLeft--; document.getElementById('timer-value').innerText = timeLeft + 's';
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false; document.getElementById('game-over-screen').style.display = 'flex';
+            document.getElementById('final-score').innerText = t.statsPrefix + score;
+            window.parent.postMessage({ type: 'GAME_OVER', score: score }, '*');
+        }
+
+        function render(time) {
+            if (!gameActive) return;
+
+            if (video.readyState >= 2) {
+                // Face logic
+                const faceRes = faceLM.detectForVideo(video, time);
+                if (faceRes.faceLandmarks.length > 0) shipX = 1 - faceRes.faceLandmarks[0][1].x;
+
+                // Hand logic
+                const handRes = handLM.detectForVideo(video, time);
+                const indicator = document.getElementById('hand-status');
+                if (handRes.landmarks.length > 0) {
+                    indicator.style.opacity = "1";
+                    const lm = handRes.landmarks[0];
+                    // Detect Clench: index/middle/ring/pinky tips below mid-joints
+                    const fingerTips = [8, 12, 16, 20], fingerMids = [6, 10, 14, 18];
+                    let clenchCount = 0;
+                    fingerTips.forEach((tip, i) => { if (lm[tip].y > lm[fingerMids[i]].y) clenchCount++; });
+
+                    if (clenchCount >= 3) isClenched = true;
+                    else if (isClenched && clenchCount <= 1) { // PULSE: Clenched then Opened
+                        isClenched = false; fire();
+                    }
+                } else { indicator.style.opacity = "0"; }
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (Math.random() < 0.02 + (score / 2000)) aliens.push(new Alien());
+
+            // Physics & Draw
+            bullets = bullets.filter(b => b.y > -50);
+            bullets.forEach(b => {
+                b.update(); b.draw();
+                aliens.forEach((a, ai) => {
+                    if (Math.hypot(b.x - a.x, b.y - a.y) < a.size) {
+                        score += 10; document.getElementById('score-value').innerText = score;
+                        if (Math.random() < 0.1) powerups.push(new PowerUp(a.x, a.y));
+                        aliens.splice(ai, 1); sfx.playExplosion();
+                    }
+                });
+            });
+
+            powerups = powerups.filter(p => p.y < canvas.height);
+            powerups.forEach((p, i) => {
+                p.update(); p.draw();
+                if (Math.hypot(p.x - (shipX * canvas.width), p.y - (canvas.height - 25)) < 30) {
+                    laserLevel = Math.min(laserLevel + 1, 3);
+                    document.getElementById('laser-level-display').style.display = 'flex';
+                    // Update dots
+                    for (let j = 1; j <= 3; j++) {
+                        document.getElementById(`dot-${j}`).classList.toggle('active', j <= laserLevel);
+                    }
+                    powerups.splice(i, 1); sfx.playPowerup();
+                }
+            });
+
+            aliens.forEach((a, i) => {
+                a.update(); a.draw();
+                if (a.y > canvas.height) aliens.splice(i, 1);
+                if (a.y > canvas.height - 40 && Math.abs(a.x - (shipX * canvas.width)) < 20) endGame();
+            });
+
+            // Draw Ship
+            const sx = shipX * canvas.width, sy = canvas.height - 25;
+            const ps = 1.5; // Ultimate Minimum Scale
+            ctx.fillStyle = '#007aff'; ctx.shadowBlur = 10; ctx.shadowColor = '#007aff';
+
+            // Ultra-precise pixel art
+            ctx.fillRect(sx - ps, sy - 6 * ps, 2 * ps, 3 * ps); // Nose
+            ctx.fillRect(sx - 3 * ps, sy - 3 * ps, 6 * ps, ps);
+            ctx.fillRect(sx - 5 * ps, sy - 2 * ps, 10 * ps, 4 * ps); // Main body
+            ctx.fillRect(sx - 7 * ps, sy + ps, 14 * ps, 2 * ps);
+            ctx.fillRect(sx - 8 * ps, sy + 2 * ps, 2 * ps, 2 * ps); // Fins
+            ctx.fillRect(sx + 6 * ps, sy + 2 * ps, 2 * ps, 2 * ps);
+
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(render);
+        }
+
+        function fire() {
+            const sx = shipX * canvas.width, sy = canvas.height - 35;
+            if (laserLevel === 1) { bullets.push(new Bullet(sx, sy)); }
+            else if (laserLevel === 2) { bullets.push(new Bullet(sx - 10, sy)); bullets.push(new Bullet(sx + 10, sy)); }
+            else {
+                bullets.push(new Bullet(sx, sy));
+                bullets.push(new Bullet(sx, sy, -0.2)); bullets.push(new Bullet(sx, sy, 0.2));
+            }
+            sfx.playLaser();
+        }
+
+        initAI();
+    </script>
+</body>
+
+</html>

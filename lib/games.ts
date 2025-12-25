@@ -51,53 +51,6 @@ export const games: Game[] = [
         }
     },
     {
-        "id": "ladder-climber",
-        "en": {
-            "title": "Ladder Climber",
-            "description": "Move your hands alternately to climb. How high can you go?",
-            "thumbnail": "/games/ladder-climber/thumbnail.png",
-            "category": "Action",
-            "tags": [
-                "Motion",
-                "AI",
-                "Fitness"
-            ],
-            "seo": {
-                "title": "Ladder Climber - AI Motion Game",
-                "description": "An AI-powered climbing game using pose detection for a fitness-focused experience.",
-                "keywords": [
-                    "ladder climber",
-                    "motion game",
-                    "pose detection",
-                    "fitness game",
-                    "webcam game"
-                ]
-            }
-        },
-        "zh": {
-            "title": "爬梯子竞速",
-            "description": "交替移动双手模拟攀爬，看谁爬得更高！",
-            "thumbnail": "/games/ladder-climber/thumbnail.png",
-            "category": "动作",
-            "tags": [
-                "体感",
-                "AI",
-                "健身"
-            ],
-            "seo": {
-                "title": "爬梯子竞速 - AI 运动游戏",
-                "description": "通过 AI 视觉识别，模拟真实的爬梯子动作，挑战你的频率极限。",
-                "keywords": [
-                    "爬梯子竞速",
-                    "体感游戏",
-                    "动作感应",
-                    "姿态识别",
-                    "健身游戏"
-                ]
-            }
-        }
-    },
-    {
         "id": "fruit-catcher",
         "en": {
             "title": "Fruit Catcher",
@@ -106,7 +59,7 @@ export const games: Game[] = [
             "category": "Action",
             "tags": [
                 "Motion",
-                "Vision Sensing",
+                "AI",
                 "Arcade"
             ],
             "seo": {
@@ -127,7 +80,7 @@ export const games: Game[] = [
             "category": "动作",
             "tags": [
                 "体感",
-                "视觉感应",
+                "AI",
                 "街机"
             ],
             "seo": {
@@ -181,7 +134,7 @@ export const games: Game[] = [
                 "title": "体感 Flappy - 头部动作感应游戏",
                 "description": "使用面部追踪技术，通过头部高度控制飞行。经典的 Flappy 玩法，全新的体感操控。",
                 "keywords": [
-                    "接水果",
+                    "体感 Flappy",
                     "体感游戏",
                     "动作感应",
                     "Flappy Bird"
@@ -200,13 +153,14 @@ export const games: Game[] = [
                 "Hand",
                 "Motion",
                 "Relaxing",
-                "Vision"
+                "AI"
             ],
             "seo": {
-                "title": "Happy Bubble Pop - Vision Interactive Game",
-                "description": "Use vision sensing to pop colorful bubbles in the air for a relaxing experience.",
+                "title": "Happy Bubble Pop - AI Vision Interactive Game",
+                "description": "Use AI vision to pop colorful bubbles in the air for a relaxing experience.",
                 "keywords": [
                     "happy bubble pop",
+                    "ai game",
                     "motion sensing",
                     "web game",
                     "hand tracking",
@@ -224,13 +178,14 @@ export const games: Game[] = [
                 "手部交互",
                 "动作感应",
                 "解压",
-                "视觉感应"
+                "AI"
             ],
             "seo": {
-                "title": "开心戳泡泡 - 视觉交互游戏",
-                "description": "使用视觉识别技术，在空中戳破彩色泡泡，享受轻松解压的互动体验。",
+                "title": "开心戳泡泡 - AI 视觉交互游戏",
+                "description": "使用 AI 视觉识别技术，在空中戳破彩色泡泡，享受轻松解压的互动体验。",
                 "keywords": [
                     "开心戳泡泡",
+                    "ai游戏",
                     "动作感应",
                     "网页游戏",
                     "视觉交互",
@@ -250,14 +205,15 @@ export const games: Game[] = [
             "tags": [
                 "Head Control",
                 "Physics",
-                "Vision",
+                "AI",
                 "Beach"
             ],
             "seo": {
-                "title": "Head Ball Pop - Face Motion Control Game",
-                "description": "Bounce a colorful beach ball using only your head! A fun vision sensing game with physics.",
+                "title": "Head Ball Pop - AI Face Motion Control Game",
+                "description": "Bounce a colorful beach ball using only your head! A fun AI vision game with physics.",
                 "keywords": [
                     "head ball pop",
+                    "ai game",
                     "face tracking",
                     "webcam game",
                     "physics game",
@@ -273,14 +229,15 @@ export const games: Game[] = [
             "tags": [
                 "头部控制",
                 "物理模拟",
-                "视觉感应",
+                "AI",
                 "沙滩"
             ],
             "seo": {
-                "title": "头球顶顶乐 - 面部动作识别体感游戏",
-                "description": "用头去顶色彩斑斓的沙滩球，不让它落地！基于视觉识别的趣味体感游戏。",
+                "title": "头球顶顶乐 - AI 面部动作识别体感游戏",
+                "description": "用头去顶色彩斑斓的沙滩球，不让它落地！基于 AI 视觉识别的趣味体感游戏。",
                 "keywords": [
                     "头球顶顶乐",
+                    "ai游戏",
                     "面部追踪",
                     "动作感应",
                     "网页游戏",
@@ -336,7 +293,147 @@ export const games: Game[] = [
             }
         }
     },
-
+    {
+        "id": "ladder-climber",
+        "en": {
+            "title": "Ladder Climber",
+            "description": "Move your hands alternately to climb. How high can you go?",
+            "thumbnail": "/games/ladder-climber/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Motion",
+                "AI",
+                "Fitness"
+            ],
+            "seo": {
+                "title": "Ladder Climber - AI Motion Game",
+                "description": "An AI-powered climbing game using pose detection for a fitness-focused experience.",
+                "keywords": [
+                    "ladder climber",
+                    "motion game",
+                    "pose detection",
+                    "fitness game",
+                    "webcam game"
+                ]
+            }
+        },
+        "zh": {
+            "title": "爬梯子竞速",
+            "description": "交替移动双手模拟攀爬，看谁爬得更高！",
+            "thumbnail": "/games/ladder-climber/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "体感",
+                "AI",
+                "健身"
+            ],
+            "seo": {
+                "title": "爬梯子竞速 - AI 运动游戏",
+                "description": "通过 AI 视觉识别，模拟真实的爬梯子动作，挑战你的频率极限。",
+                "keywords": [
+                    "爬梯子竞速",
+                    "体感游戏",
+                    "动作感应",
+                    "姿态识别",
+                    "健身游戏"
+                ]
+            }
+        }
+    },
+    {
+        "id": "mouth-blaster",
+        "en": {
+            "title": "Star Force",
+            "description": "Pilot with your nose and fire with hand gestures! A retro-inspired motion shooter.",
+            "thumbnail": "/games/mouth-blaster/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Motion",
+                "AI",
+                "Gestures"
+            ],
+            "seo": {
+                "title": "Star Force - AI Gesture Space Shooter",
+                "description": "Control your ship with head and hands in this high-tech retro shooter.",
+                "keywords": [
+                    "hand gesture game",
+                    "star force",
+                    "ai game",
+                    "space shooter"
+                ]
+            }
+        },
+        "zh": {
+            "title": "星际原力",
+            "description": "鼻子导航，右手动作开火！致敬经典的体感射击游戏。",
+            "thumbnail": "/games/mouth-blaster/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "体感",
+                "AI",
+                "手势"
+            ],
+            "seo": {
+                "title": "星际原力 - 手势与面部 AI 射击游戏",
+                "description": "全新的双模型 AI 驱动，带带你体验极致的手势操控射击感。",
+                "keywords": [
+                    "星际原力",
+                    "手势识别",
+                    "体感游戏",
+                    "太空射击"
+                ]
+            }
+        }
+    },
+    {
+        "id": "radish-tissue",
+        "en": {
+            "title": "Radish or Tissue?",
+            "description": "Follow the commands: carrot or tissue! Quick reactions and human IQ test.",
+            "thumbnail": "/games/radish-tissue/thumbnail.png",
+            "category": "Casual",
+            "tags": [
+                "Hand",
+                "Motion",
+                "Reaction",
+                "AI"
+            ],
+            "seo": {
+                "title": "Radish or Tissue? - AI Human IQ Test",
+                "description": "Challenge your brain with this magic radish or tissue game using AI hand tracking.",
+                "keywords": [
+                    "radish tissue",
+                    "iq test",
+                    "hand tracking",
+                    "reaction game",
+                    "webcam game"
+                ]
+            }
+        },
+        "zh": {
+            "title": "萝卜纸巾大挑战",
+            "description": "听指令：萝卜还是纸巾？魔性语音，挑战你的反应极限！",
+            "thumbnail": "/games/radish-tissue/thumbnail.png",
+            "category": "休闲",
+            "tags": [
+                "手部交互",
+                "动作感应",
+                "反应力",
+                "AI"
+            ],
+            "seo": {
+                "title": "萝卜纸巾大挑战 - AI 人类智力检测",
+                "description": "听魔性指令举起萝卜或纸巾，挑战反应速度。基于 AI 手势识别的趣味交互游戏。",
+                "keywords": [
+                    "萝卜纸巾",
+                    "人类智力检测",
+                    "手势识别",
+                    "反应游戏",
+                    "体感游戏"
+                ]
+            }
+        }
+    }
 
 ];
 

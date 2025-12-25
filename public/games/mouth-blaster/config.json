@@ -1,0 +1,47 @@
+[
+    {
+        "id": "mouth-blaster",
+        "en": {
+            "title": "Star Force",
+            "description": "Pilot with your nose and fire with hand gestures! A retro-inspired motion shooter.",
+            "thumbnail": "/games/mouth-blaster/thumbnail.png",
+            "category": "Action",
+            "tags": [
+                "Motion",
+                "AI",
+                "Gestures"
+            ],
+            "seo": {
+                "title": "Star Force - AI Gesture Space Shooter",
+                "description": "Control your ship with head and hands in this high-tech retro shooter.",
+                "keywords": [
+                    "hand gesture game",
+                    "star force",
+                    "ai game",
+                    "space shooter"
+                ]
+            }
+        },
+        "zh": {
+            "title": "星际原力",
+            "description": "鼻子导航，右手动作开火！致敬经典的体感射击游戏。",
+            "thumbnail": "/games/mouth-blaster/thumbnail.png",
+            "category": "动作",
+            "tags": [
+                "体感",
+                "AI",
+                "手势"
+            ],
+            "seo": {
+                "title": "星际原力 - 手势与面部 AI 射击游戏",
+                "description": "全新的双模型 AI 驱动，带你体验极致的手势操控射击感。",
+                "keywords": [
+                    "星际原力",
+                    "手势识别",
+                    "体感游戏",
+                    "太空射击"
+                ]
+            }
+        }
+    }
+]
