@@ -34,6 +34,8 @@
             overflow: hidden;
             width: 100vw;
             height: 100vh;
+            /* Mobile Safari fix */
+            height: -webkit-fill-available;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -44,22 +46,27 @@
             position: relative;
             width: 100%;
             height: 100%;
+            /* 还原旧版本的 PC 布局逻辑：限制最大宽度并保持比例 */
             max-width: 500px;
             aspect-ratio: 9/16;
+            /* 在宽屏上如果高度溢出，也需要限制 */
+            max-height: 90vh;
+
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            /* 旧版本不需要额外的背景色或边框，因为它融入了 body */
         }
 
-        /* 视频容器 - 手绘边框 */
+        /* 视频容器 - 长方形拍立得风格 - 左上角 */
         #video-container {
             position: absolute;
             top: 20px;
             left: 20px;
-            width: 80px;
-            height: 80px;
-            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-            /* 不规则圆形 */
+            width: 120px;
+            height: 90px;
+            border-radius: 8px;
+            /* 圆角矩形 */
             overflow: hidden;
             border: 3px solid var(--ink-color);
             transform: scaleX(-1);
@@ -83,49 +90,56 @@
             height: 100%;
         }
 
-        /* HUD - 贴纸风格 */
+        /* HUD - 贴纸风格 - 绝对定位布局 */
         .hud {
             position: absolute;
-            top: 30px;
+            top: 0;
             left: 0;
             right: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 40;
+            height: 0;
+            z-index: 60;
+            /* 必须比视频高，或者错开 */
             pointer-events: none;
         }
 
+        /* 分数 - 右上角 */
         .score-tape {
+            position: absolute;
+            right: 20px;
+            top: 20px;
             background: #FFD93D;
-            padding: 8px 25px;
+            padding: 8px 15px;
             transform: rotate(-2deg);
             border: 3px solid var(--ink-color);
             border-radius: 5px 15px 5px 25px;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
             color: var(--ink-color);
+            white-space: nowrap;
         }
 
+        /* 计时器 - 顶部中间 */
         .timer-tape {
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            transform: translateX(-50%) rotate(2deg);
             background: #FF6B6B;
-            padding: 8px 20px;
-            transform: rotate(2deg);
+            padding: 8px 15px;
             border: 3px solid var(--ink-color);
             border-radius: 15px 5px 25px 5px;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
             color: #FFF;
-            margin-left: 15px;
         }
 
         /* 底部进度条 - 半调风格 */
         .progress-bar-container {
             position: absolute;
-            bottom: 60px;
-            /* 往上提 */
+            bottom: 8vh;
+            /* 使用 vh 适配不同高度 */
             left: 10%;
             width: 80%;
             height: 24px;
@@ -143,18 +157,22 @@
             background: repeating-linear-gradient(45deg,
                     var(--highlight),
                     var(--highlight) 10px,
-                    #7bed9f 10px,
-                    #7bed9f 20px);
+                    #FF8E8E 10px,
+                    #FF8E8E 20px);
             border-right: 3px solid var(--ink-color);
             transition: width 0.016s linear;
         }
 
-        /* 物品区 - 涂鸦风格 */
+        /* 物品区 - 使用 vh 相对定位 */
         .target-area {
             position: absolute;
-            bottom: 140px;
-            width: 140px;
-            height: 140px;
+            bottom: 20vh;
+            /* 提高位置防止某些刘海屏遮挡 */
+            width: 18vh;
+            /* 大小随屏幕高度变化，保持比例 */
+            height: 18vh;
+            max-width: 140px;
+            max-height: 140px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -163,8 +181,8 @@
         }
 
         .target-area svg {
-            width: 130px;
-            height: 130px;
+            width: 90%;
+            height: 90%;
             filter: drop-shadow(5px 5px 0px rgba(0, 0, 0, 0.15));
             transition: transform 0.2s;
         }
@@ -176,7 +194,7 @@
 
         #command-display {
             position: absolute;
-            top: 35%;
+            top: 40%;
             left: 50%;
             transform: translate(-50%, -50%);
             width: 100%;
@@ -198,6 +216,17 @@
 
             50% {
                 transform: translateY(-10px) rotate(2deg);
+            }
+        }
+
+        /* 补充缺失的 spin 动画 */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
             }
         }
 
@@ -231,12 +260,14 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
-            padding: 30px;
+            padding: 20px;
+            /* 减小 padding 适配小屏 */
             text-align: center;
         }
 
         h1 {
-            font-size: 42px;
+            font-size: min(42px, 8vw);
+            /* 自适应字体 */
             margin-bottom: 20px;
             text-shadow: 3px 3px 0 #CAD3C8;
             transform: rotate(-3deg);
@@ -249,6 +280,30 @@
 
         .svg-lib {
             display: none;
+        }
+
+        /* --- 放到最后，确保优先级覆盖默认样式 --- */
+        /* 针对移动端全屏优化：取消宽高比限制，铺满 */
+        @media (max-width: 500px) {
+            #game-container {
+                max-width: none;
+                max-height: none;
+                aspect-ratio: auto;
+                height: 100vh;
+            }
+
+            /* 避开手机刘海/状态栏 */
+            #video-container {
+                top: 60px;
+            }
+
+            .score-tape {
+                top: 60px;
+            }
+
+            .timer-tape {
+                top: 60px;
+            }
         }
     </style>
 </head>
@@ -308,6 +363,7 @@
         </div>
 
         <div class="hud">
+            <!-- 直接绝对定位，不再 flex -->
             <div class="score-tape">
                 IQ: <span id="score-display">0</span>
             </div>
@@ -421,7 +477,7 @@
             });
         }
 
-        // --- 1€ Filter ---
+        // --- 1€ Filter (UPDATED PARAMS) ---
         class OneEuroFilter {
             constructor(minCutoff = 1.0, beta = 0.05) {
                 this.minCutoff = minCutoff; this.beta = beta;
@@ -440,7 +496,9 @@
                 return this.x;
             }
         }
-        const filters = { x: new OneEuroFilter(2.0, 0.02), y: new OneEuroFilter(2.0, 0.02) };
+
+        // Tweaked parameters: minCutoff 1.5 (responsive), beta 0.01 (balanced)
+        const filters = { x: new OneEuroFilter(1.5, 0.01), y: new OneEuroFilter(1.5, 0.01) };
 
         // --- GAME STATE ---
         let score = 0, gameActive = false, currentCommand = null, canInteract = false;
@@ -456,22 +514,26 @@
         }
 
         // --- RENDERER (涂鸦猫爪) ---
-        function drawCatPaw(landmarks) {
-            if (!landmarks) return;
+        // New: Calculated smoothing based on Landmarks, return Coordinates
+        function getSmoothedPalm(landmarks, w, h) {
+            const rawPalmX = (1 - (landmarks[0].x + landmarks[5].x + landmarks[17].x) / 3) * w;
+            const rawPalmY = (landmarks[0].y + landmarks[5].y + landmarks[17].y) / 3 * h;
+
+            const palmX = filters.x.filter(rawPalmX, performance.now());
+            const palmY = filters.y.filter(rawPalmY, performance.now());
+
+            return { x: palmX, y: palmY };
+        }
+
+        // Renamed Draw function taking coordinates
+        function drawCatPaw(x, y) {
             const w = canvas.width, h = canvas.height;
-            const wrist = landmarks[0];
-            const rawX = 1 - wrist.x;
-            const sx = filters.x.filter(rawX * w, performance.now());
-            const sy = filters.y.filter(wrist.y * h, performance.now());
+            const palmX = x;
+            const palmY = y;
 
             ctx.save();
-
-            // 粗线条手绘风
             ctx.lineJoin = "round";
             ctx.lineCap = "round";
-
-            const palmX = (1 - (landmarks[0].x + landmarks[5].x + landmarks[17].x) / 3) * w;
-            const palmY = (landmarks[0].y + landmarks[5].y + landmarks[17].y) / 3 * h;
 
             // 白色填充，深色描边
             ctx.fillStyle = "#FFF";
@@ -527,6 +589,17 @@
             return { x: (palmX + offsets[2].dx * 0.85) / w, y: (palmY + offsets[2].dy * 0.85) / h };
         }
 
+        // --- Failsafe: Ensure something shows up ---
+        setTimeout(() => {
+            const loading = document.getElementById('loading-screen');
+            const start = document.getElementById('start-screen');
+            if (loading && loading.style.display !== 'none' && start && start.style.display === 'none') {
+                console.warn("Loading slow, updating status...");
+                const status = document.getElementById('loading-status');
+                if (status) status.innerText += "\n(Waiting for camera or resources...)";
+            }
+        }, 3000);
+
         async function initAI() {
             const status = document.getElementById('loading-status');
             const LOCAL_RES = {
@@ -536,14 +609,21 @@
             };
 
             try {
+                if (status) status.innerText = "Loading Vision Module...";
                 const module = await import(LOCAL_RES.js);
+
+                if (status) status.innerText = "Initializing Detector...";
                 FilesetResolver = module.FilesetResolver; HandLandmarker = module.HandLandmarker;
                 const vision = await FilesetResolver.forVisionTasks(LOCAL_RES.wasm);
                 handLandmarker = await HandLandmarker.createFromOptions(vision, {
                     baseOptions: { modelAssetPath: LOCAL_RES.model, delegate: "GPU" },
+                    // 降低识别门槛，防止快速移动时丢失导致的闪烁
+                    minHandDetectionConfidence: 0.3,
+                    minHandPresenceConfidence: 0.3,
                     runningMode: "VIDEO", numHands: 1
                 });
 
+                if (status) status.innerText = "Requesting Camera...";
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 480 }, height: { ideal: 640 } } });
                 video.srcObject = stream;
                 video.onloadedmetadata = () => {
@@ -554,9 +634,17 @@
                     requestAnimationFrame(gameLoop);
                 };
             } catch (e) {
-                status.innerText = TEXTS[currentLang].netError + " (" + e.message + ")";
+                console.error(e);
+                if (status) {
+                    status.innerHTML = `<span style="color:red; font-weight:bold;">${TEXTS[currentLang].netError}</span><br><small>${e.message}</small><br><br><button class="btn" style="padding:10px; font-size:16px;" onclick="forceStart()">Ignore & Start</button>`;
+                }
             }
         }
+
+        window.forceStart = () => {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+        };
 
         window.startGame = () => {
             gameActive = true; score = 0;
@@ -689,11 +777,12 @@
 
             if (handLandmarker && video.readyState >= 2) {
                 const results = handLandmarker.detectForVideo(video, time);
-                if (results.landmarks && results.landmarks[0]) {
-                    const tipData = drawCatPaw(results.landmarks[0]);
 
-                    // 调试绘制光标点
-                    // ctx.beginPath(); ctx.arc(tipData.x * canvas.width, tipData.y * canvas.height, 5, 0, Math.PI*2); ctx.fillStyle="red"; ctx.fill();
+                // 1. Update position IF hand detected
+                if (results.landmarks && results.landmarks[0]) {
+                    const smoothPos = getSmoothedPalm(results.landmarks[0], canvas.width, canvas.height);
+
+                    const tipData = drawCatPaw(smoothPos.x, smoothPos.y);
 
                     if (gameActive && canInteract) {
                         const containerRect = document.getElementById('game-container').getBoundingClientRect();
