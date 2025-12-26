@@ -79,15 +79,6 @@ export default async function GamePage({ params }: { params: Promise<{ lang: str
                 {/* Subtle glass overlay when not interacting (optional) */}
                 <div className="absolute inset-0 pointer-events-none border-[1px] border-white/5 rounded-[2.5rem] z-10" />
             </div>
-
-            {/* Bottom Info Bar */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10">
-                <div className="w-8 h-8 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${game[currentLang].thumbnail})` }} />
-                <div>
-                    <h2 className="text-sm font-bold text-white/90">{game[currentLang].title}</h2>
-                    <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">{game[currentLang].category}</p>
-                </div>
-            </div>
         </div>
     );
 }
