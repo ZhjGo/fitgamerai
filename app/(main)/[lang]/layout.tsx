@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "../../globals.css";
 import Navbar from "@/components/Navbar";
 import { Metadata } from "next";
+import Script from "next/script";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -60,6 +61,14 @@ export default async function RootLayout({
     const resolvedParams = await params;
     return (
         <html lang={resolvedParams.lang || "en"} className="dark">
+            <head>
+                <Script
+                    async
+                    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9067024774549867"
+                    crossOrigin="anonymous"
+                    strategy="afterInteractive"
+                />
+            </head>
             <body className={`${inter.className} bg-black text-white selection:bg-white/20 overflow-x-hidden`}>
                 <GoogleAnalytics />
                 <Navbar />
